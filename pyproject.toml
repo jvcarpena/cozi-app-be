@@ -1,0 +1,14 @@
+[project]
+name = "cozi-app-be"
+version = "1.0"
+dependencies = [
+    "fastapi[standard]",
+    "psycopg[binary]",
+    "sqlalchemy",
+    "alembic",
+]
+
+[project.optional-dependencies]
+local = [
+    "black",
+]
