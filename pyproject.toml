@@ -6,6 +6,7 @@ dependencies = [
     "psycopg[binary]",
     "sqlalchemy",
     "alembic",
+    "pygtrie~=2.5.0",
 ]
 
 [project.optional-dependencies]
