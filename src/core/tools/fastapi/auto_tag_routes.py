@@ -21,7 +21,7 @@ def auto_tag_routes(app: FastAPI):
 
         trie[fragment] = trie.get(fragment, 0) + 1
 
-    _ = [trie.pop(path) for path, count in trie.items() if count <= 1]
+    _ = [trie.pop(path) for path, count in trie.items() if count <= 0]
 
     _ = [route.tags.append(trie.longest_prefix(route.path).key) for route in routes]
 
@@ -32,8 +32,8 @@ def auto_tag_routes(app: FastAPI):
             "name": "Guest",
             "tags": trie.keys("/guest"),
         },
-        {
-            "name": "Manager",
-            "tags": trie.keys("/manager"),
-        },
+        # {
+        #     "name": "Manager",
+        #     "tags": trie.keys("/manager"),
+        # },
     ]

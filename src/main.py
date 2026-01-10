@@ -12,6 +12,7 @@ from starlette.types import ASGIApp
 from core.tools.fastapi.auto_tag_routes import auto_tag_routes
 from core.tools.fastapi.exception_handlers import exception_handlers
 from core.tools.fastapi.middlewares import middlewares
+from domains.guest.router import guest_router
 
 
 class CustomFastApi(FastAPI):
@@ -27,7 +28,7 @@ class CustomFastApi(FastAPI):
             ]
         )
 
-        asgi_app = self.router
+        asgi_app = self.router  # Request -> Router -> Response
 
         for cls, args, kwargs in reversed(middleware):
 
@@ -52,5 +53,8 @@ app = CustomFastApi(
 )
 
 
+app.include_router(guest_router)
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True)
+
+    uvicorn.run("main:app")
