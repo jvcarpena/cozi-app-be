@@ -7,6 +7,7 @@ dependencies = [
     "sqlalchemy",
     "alembic",
     "pygtrie~=2.5.0",
+    "pyjwt",
 ]
 
 [project.optional-dependencies]
