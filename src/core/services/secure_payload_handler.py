@@ -69,7 +69,9 @@ if __name__ == "__main__":
     signup_encrypted = SecurePayloadHandler(data_to_encrypt=payload_signup).encrypt_payload()
     print(f"signup_encrypted: {signup_encrypted}")
 
-    signup_decrypted = SecurePayloadHandler(data_to_decrypt=signup_encrypted.model_dump()).decrypt_payload()
+    signup_decrypted = SecurePayloadHandler(data_to_decrypt=signup_encrypted.model_dump()).decrypt_payload(
+        is_sign_up=True
+    )
     print(f"signup_decrypted: {signup_decrypted}")
 
     login_encrypted = SecurePayloadHandler(data_to_encrypt=payload_login).encrypt_payload()
