@@ -20,9 +20,13 @@ def validate_name_characters(name: str) -> str:
     return name
 
 
-class SignUpRequestDTO(BaseModel):
+class EncryptedDataDTO(BaseModel):
 
-    data: str
+    ciphertext: str
+
+    nonce: str
+
+    tag: str
 
 
 class DecryptedSignUpDataDTO(BaseModel):
@@ -32,5 +36,12 @@ class DecryptedSignUpDataDTO(BaseModel):
     first_name: Annotated[str, AfterValidator(validate_name_characters)]
 
     last_name: Annotated[str, AfterValidator(validate_name_characters)]
+
+    password: str
+
+
+class DecryptedLoginDataDTO(BaseModel):
+
+    email: EmailStr
 
     password: str
