@@ -1,5 +1,9 @@
-from fastapi import APIRouter
+from typing import Annotated
 
+from fastapi import APIRouter, Body
+
+from core.services.auto_session import AutoSession
+from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO
 from domains.guest.service_login import InitialResponseDTO, login
 from domains.guest.service_sign_up import sign_up
 
@@ -13,6 +17,6 @@ def do_login() -> InitialResponseDTO:
 
 
 @guest_router.post("/sign-up")
-def do_sign_up():
+def do_sign_up(encrypted_data: Annotated[EncryptedDataDTO, Body()], session: AutoSession):
 
-    return sign_up()
+    return sign_up(encrypted_data, session)
