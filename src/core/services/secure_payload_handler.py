@@ -55,7 +55,7 @@ class SecurePayloadHandler:
 if __name__ == "__main__":
 
     payload_signup = {
-        "email": "jose_carpena@gmail.com",
+        "email": "jvcarpena2@gmail.com",
         "first_name": "jv",
         "last_name": "carpena",
         "password": "jv1234",
