@@ -1,0 +1,27 @@
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+
+metrics_generator:
+  traces_storage:
+    path: /var/tempo/generator/traces
+  storage:
+    path: /var/tempo/generator/wal
+  processor:
+    local_blocks:
+      filter_server_spans: false
+      flush_to_storage: true
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/blocks
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [local-blocks]

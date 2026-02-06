@@ -1,0 +1,36 @@
+services:
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../docker/grafana/grafana.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SERVER_ROOT_URL=/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    restart: always
+    depends_on:
+      - tempo
+  tempo:
+    image: grafana/tempo:latest
+    command: ["-config.file=/etc/tempo.yaml"]
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+    volumes:
+      - tempo-storage:/var/tempo
+      - ../../docker/grafana/tempo.yaml:/etc/tempo.yaml
+    restart: always
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-storage:/loki
+    restart: always
+
+volumes:
+  grafana-storage:
+  tempo-storage:
+  loki-storage:
