@@ -6,7 +6,7 @@ datasources:
 - name: Tempo
   type: tempo
   access: proxy
-  url: http://tempo/3200
+  url: http://tempo:3200
   basicAuth: false
   isDefault: true
   editable: false
@@ -19,6 +19,5 @@ datasources:
   type: loki
   access: proxy
   url: http://loki:3100
-  editable: false
   jsonData:
     maxLines: 1000

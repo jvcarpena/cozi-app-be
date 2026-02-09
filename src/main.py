@@ -87,7 +87,7 @@ set_tracer_provider(tracer_provider := TracerProvider(resource=resource))
 tracer_provider.add_span_processor(
     BatchSpanProcessor(
         OTLPSpanExporter(
-            endpoint="http://localhost:4317",
+            endpoint="tempo:4317",
             insecure=True,
             timeout=3,
         )
@@ -101,7 +101,7 @@ LoggingInstrumentor().instrument(set_logging_format=True)
 set_logger_provider(logger_provider := LoggerProvider(resource=resource))
 
 logger_provider.add_log_record_processor(
-    BatchLogRecordProcessor(OTLPLogExporter(endpoint="http://localhost:4318/v1/logs", timeout=3))
+    BatchLogRecordProcessor(OTLPLogExporter(endpoint="http://loki:3100/otlp/v1/logs", timeout=3))
 )
 
 logging.getLogger().addHandler(CustomLoggingHandler(logger_provider=logger_provider))

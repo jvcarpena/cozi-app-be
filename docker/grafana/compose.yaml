@@ -12,6 +12,9 @@ services:
     restart: always
     depends_on:
       - tempo
+    networks:
+      - observability
+
   tempo:
     image: grafana/tempo:latest
     command: ["-config.file=/etc/tempo.yaml"]
@@ -22,6 +25,9 @@ services:
       - tempo-storage:/var/tempo
       - ../../docker/grafana/tempo.yaml:/etc/tempo.yaml
     restart: always
+    networks:
+      - observability
+
   loki:
     image: grafana/loki:latest
     ports:
@@ -29,8 +35,15 @@ services:
     volumes:
       - loki-storage:/loki
     restart: always
+    networks:
+      - observability
 
 volumes:
   grafana-storage:
   tempo-storage:
   loki-storage:
+
+networks:
+  observability:
+    name: observability
+    driver: bridge
