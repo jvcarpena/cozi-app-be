@@ -78,7 +78,7 @@ app = CustomFastApi(
 # ROUTERS
 app.include_router(guest_router)
 
-resource = Resource.create(attributes={"service.name": "fastapi-app-cozi"})
+resource = Resource.create(attributes={"service.name": "cozi-develop"})
 
 # TEMPO
 
