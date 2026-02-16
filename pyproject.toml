@@ -14,6 +14,9 @@ dependencies = [
     "opentelemetry-exporter-otlp",
     "opentelemetry-instrumentation-fastapi",
     "opentelemetry-instrumentation-logging",
+    "prometheus-fastapi-instrumentator",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-prometheus",
 ]
 
 [project.optional-dependencies]

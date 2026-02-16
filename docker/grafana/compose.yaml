@@ -12,6 +12,7 @@ services:
     restart: always
     depends_on:
       - tempo
+      - prometheus
     networks:
       - observability
 
@@ -24,6 +25,17 @@ services:
     volumes:
       - tempo-storage:/var/tempo
       - ../../docker/grafana/tempo.yaml:/etc/tempo.yaml
+    restart: always
+    networks:
+      - observability
+
+  prometheus:
+    image: prom/prometheus:latest
+    command: ["--config.file=/etc/prometheus/prometheus.yaml"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../../docker/grafana/prometheus.yaml:/etc/prometheus/prometheus.yaml
     restart: always
     networks:
       - observability

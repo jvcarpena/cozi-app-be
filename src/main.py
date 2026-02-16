@@ -12,18 +12,22 @@ from opentelemetry._logs import set_logger_provider
 # noinspection PyProtectedMember
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
+from opentelemetry.metrics import set_meter_provider
 
 # noinspection PyProtectedMember
 from opentelemetry.sdk._logs import LoggerProvider
 
 # noinspection PyProtectedMember
 from opentelemetry.sdk._logs._internal.export import BatchLogRecordProcessor
+from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import set_tracer_provider
+from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.middleware import Middleware
 from starlette.middleware.errors import ServerErrorMiddleware
 from starlette.middleware.exceptions import ExceptionMiddleware
@@ -80,6 +84,17 @@ app.include_router(guest_router)
 
 resource = Resource.create(attributes={"service.name": "cozi-develop"})
 
+# METRICS. This will scrape and expose the http://app:8000/metrics automatically.
+
+set_meter_provider(
+    MeterProvider(
+        resource=resource,
+        metric_readers=[PrometheusMetricReader()],
+    )
+)
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+
 # TEMPO
 
 set_tracer_provider(tracer_provider := TracerProvider(resource=resource))
@@ -94,6 +109,8 @@ tracer_provider.add_span_processor(
     )
 )
 
+FastAPIInstrumentor.instrument_app(app, exclude_spans=["receive", "send"])
+
 # LOKI
 
 LoggingInstrumentor().instrument(set_logging_format=True)
@@ -105,10 +122,6 @@ logger_provider.add_log_record_processor(
 )
 
 logging.getLogger().addHandler(CustomLoggingHandler(logger_provider=logger_provider))
-
-# INSTRUMENT FastAPI
-
-FastAPIInstrumentor.instrument_app(app, exclude_spans=["receive", "send"])
 
 
 if __name__ == "__main__":
