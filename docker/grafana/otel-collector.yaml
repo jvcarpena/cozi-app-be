@@ -1,0 +1,52 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+
+exporters:
+  otlp/tempo:
+    endpoint: "tempo:4317"
+    tls:
+      insecure: true
+    timeout: 5s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 120s
+
+  otlphttp/loki:
+    endpoint: "http://loki:3100/otlp"
+    tls:
+      insecure: true
+
+  prometheus:
+    endpoint: "0.0.0.0:8889"  # Prometheus will scrape the collector here
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki]
+
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]

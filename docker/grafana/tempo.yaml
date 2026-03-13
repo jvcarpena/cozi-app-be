@@ -1,5 +1,8 @@
+stream_over_http_enabled: true
+
 server:
   http_listen_port: 3200
+  log_level: info
 
 distributor:
   receivers:
@@ -7,12 +10,20 @@ distributor:
       protocols:
         grpc:
           endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+
+ingester:
+  max_block_duration: 5m
 
 metrics_generator:
-  traces_storage:
-    path: /var/tempo/generator/traces
+  ring:
+    kvstore:
+      store: inmemory          # single node, no consul/etcd needed
   storage:
     path: /var/tempo/generator/wal
+  traces_storage:
+    path: /var/tempo/generator/traces
   processor:
     local_blocks:
       filter_server_spans: false
@@ -23,7 +34,10 @@ storage:
     backend: local
     local:
       path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal
 
+# Enable the local-blocks processor per tenant (required - disabled by default)
 overrides:
   defaults:
     metrics_generator:

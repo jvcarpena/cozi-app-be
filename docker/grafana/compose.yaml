@@ -1,31 +1,46 @@
 services:
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
+  tempo-init:
+    image: busybox:latest
+    user: root
+    entrypoint: ["chown", "10001:10001", "/var/tempo"]
     volumes:
-      - ../../docker/grafana/grafana.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - grafana-storage:/var/lib/grafana
-    environment:
-      - GF_SERVER_ROOT_URL=/grafana
-      - GF_SERVER_SERVE_FROM_SUB_PATH=true
-    restart: always
-    depends_on:
-      - tempo
-      - prometheus
+      - tempo-storage:/var/tempo
     networks:
       - observability
 
   tempo:
-    image: grafana/tempo:latest
+    image: grafana/tempo:2.6.1
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
       - "3200:3200"
-      - "4317:4317"
+      # 4317 is intentionally NOT exposed here
+      # otel-collector owns 4317 externally
+      # tempo still listens on 4317 internally for the collector to reach it
     volumes:
       - tempo-storage:/var/tempo
       - ../../docker/grafana/tempo.yaml:/etc/tempo.yaml
     restart: always
+    depends_on:
+      tempo-init:
+        condition: service_completed_successfully
+    networks:
+      - observability
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector.yaml"]
+    ports:
+      - "4317:4317"    # OTLP gRPC — your FastAPI app sends here
+      - "4318:4318"    # OTLP HTTP — optional
+      - "8889:8889"    # Prometheus scrapes collector metrics here
+    volumes:
+      - ../../docker/grafana/otel-collector.yaml:/etc/otel-collector.yaml
+    restart: always
+    depends_on:
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
     networks:
       - observability
 
@@ -36,6 +51,7 @@ services:
       - "9090:9090"
     volumes:
       - ../../docker/grafana/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - prometheus-storage:/prometheus
     restart: always
     networks:
       - observability
@@ -50,9 +66,31 @@ services:
     networks:
       - observability
 
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../docker/grafana/grafana.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SERVER_ROOT_URL=/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true          # optional: skip login for local dev
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin        # optional: skip login for local dev
+    restart: always
+    depends_on:
+      - tempo
+      - prometheus
+      - loki
+      - otel-collector
+    networks:
+      - observability
+
 volumes:
   grafana-storage:
   tempo-storage:
+  prometheus-storage:
   loki-storage:
 
 networks:
