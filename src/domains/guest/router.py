@@ -4,8 +4,8 @@ from fastapi import APIRouter, Body
 
 from core.services.auto_session import AutoSession
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO
-from domains.guest.service_login import InitialResponseDTO, login
-from domains.guest.service_sign_up import sign_up
+from domains.guest.login_service import InitialResponseDTO, login
+from domains.guest.sign_up_service import sign_up
 
 guest_router = APIRouter(prefix="/guest")
 

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from core.models.guest import Guest
 from core.services.secure_payload_handler import SecurePayloadHandler
+from core.services.send_email import send_email, SendEmailRequestDTO
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO
 from domains.guest.enums import GuestErrorMessage
 
@@ -44,7 +45,7 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
 
     # ADD NEW GUEST DATA TO DB
     session.add(
-        Guest(
+        new_guest := Guest(
             id=guest_id,
             email_address=decrypted_user_data.email,
             first_name=decrypted_user_data.first_name,
@@ -54,5 +55,20 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
     )
 
     session.commit()
+
+    # SEND VERIFICATION EMAIL
+
+    try:
+        send_email(
+            SendEmailRequestDTO(
+                to=new_guest.email_address,
+                subject="Email Verification",
+                template_name="sign_up_email.html",
+                html_substitutions={"verification_url": ""},
+            )
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {e}")
 
     return
