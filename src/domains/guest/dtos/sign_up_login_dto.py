@@ -20,6 +20,15 @@ def validate_name_characters(name: str) -> str:
     return name
 
 
+def check_if_empty_str(value: str):
+
+    if value == "":
+
+        return None
+
+    return value
+
+
 class EncryptedDataDTO(BaseModel):
 
     ciphertext: str
@@ -36,6 +45,8 @@ class DecryptedSignUpDataDTO(BaseModel):
     first_name: Annotated[str, AfterValidator(validate_name_characters)]
 
     last_name: Annotated[str, AfterValidator(validate_name_characters)]
+
+    phone: Annotated[str, AfterValidator(check_if_empty_str)]
 
     password: str
 

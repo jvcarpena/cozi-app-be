@@ -1,82 +1,84 @@
 <!DOCTYPE html>
-
-<html lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Welcome to [App Name]</title>
-<!-- Tailwind CSS v3 CDN with plugins -->
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<!-- Tailwind Configuration for custom colors -->
-<script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brandPrimary: '#0854b3',
-            brandAccent: '#4ea7e5',
-            brandBg: '#f8fafc',
-          }
-        }
-      }
-    }
-  </script>
-<style data-purpose="typography">
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    body {
-      font-family: 'Inter', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-  </style>
-<style data-purpose="email-constraints">
-    /* Ensuring mobile responsiveness for email clients */
-    .email-container {
-      max-width: 600px !important;
-      margin: 0 auto !important;
-    }
-  </style>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Welcome to Cozi</title>
 </head>
-<body class="text-slate-800 m-0 p-0 leading-normal bg-slate-100 flex items-center justify-center min-h-screen">
-<!-- BEGIN: MainContainer -->
-<div class="email-container shadow-sm overflow-hidden bg-[#f0f9ff]" data-purpose="email-wrapper">
-<!-- BEGIN: Header -->
-<header class="py-8 px-6 text-center border-b border-slate-50" data-purpose="main-header">
-<!-- Placeholder Logo -->
-<img alt="[App Name] Logo" class="mx-auto h-10 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAQVZe7FjBkSUr7pbucxAfSaMJZi2RELAIsJi1uo7ngO2PE9qbEsCf3x5DLnjCcPjO-W0rlbClpWFhLoFGJyruVNVSwkhbOLwaL5FuQOPqLkgfYB5SCdMo8z-StdTe7u0BTkfATMT4X9sPBiCBEilOv3YxdjyTEW1gmr6JizwsTqiSAmo6h-WYyi8W3ilsoZugsNInfWZbCVlje-6Jrv6WxZYmT5g5yU8mvmhlMoMNARW8NDJvGoarXshlB3dILmpXi68WC7X0gg83"/>
-</header>
-<!-- END: Header -->
-<!-- BEGIN: HeroSection -->
-<section class="py-12 px-8 text-center" data-purpose="hero-section">
-<h1 class="text-3xl font-bold text-slate-900 mb-4">Welcome to [App Name]!</h1>
-<p class="text-lg text-slate-600 mb-8 max-w-md mx-auto">
-        We're thrilled to have you on board. [App Name] is designed to help you streamline your workflow and achieve your goals faster than ever before.
-      </p>
-<!-- Primary CTA -->
-<a class="inline-block bg-brandPrimary text-white px-8 py-4 rounded-md font-semibold text-lg hover:bg-opacity-90 transition-all shadow-md" data-purpose="get-started-cta" href="{{ verification_url }}">
-        Get Started
-      </a>
-</section>
-<!-- END: HeroSection -->
-<!-- BEGIN: FeaturesSection -->
-<!-- END: FeaturesSection -->
-<!-- BEGIN: Footer -->
-<footer class="py-12 px-8 text-center text-slate-400 text-sm border-t border-slate-100" data-purpose="main-footer">
-<!-- Social Placeholder Icons -->
-<div class="flex justify-center gap-6 mb-8" data-purpose="social-links">
-<a class="hover:text-brandAccent transition-colors" href="#">Twitter</a>
-<a class="hover:text-brandAccent transition-colors" href="#">LinkedIn</a>
-<a class="hover:text-brandAccent transition-colors" href="#">Instagram</a>
-</div>
-<p class="mb-2">© 2023 [Company Name], Inc. All rights reserved.</p>
-<p class="mb-6">123 Tech Avenue, Silicon Valley, CA 94000, USA</p>
-<div class="border-t border-slate-100 pt-6">
-<p>
-          Don't want to receive these emails anymore?
-          <a class="text-brandAccent underline hover:text-brandPrimary" href="#">Unsubscribe here</a>.
-        </p>
-</div>
-</footer>
-<!-- END: Footer -->
-</div>
-<!-- END: MainContainer -->
-</body></html>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Inter',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+
+  <!-- Main Container -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;min-height:100vh;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#f0f9ff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding:32px 24px;border-bottom:1px solid #f8fafc;">
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAQVZe7FjBkSUr7pbucxAfSaMJZi2RELAIsJi1uo7ngO2PE9qbEsCf3x5DLnjCcPjO-W0rlbClpWFhLoFGJyruVNVSwkhbOLwaL5FuQOPqLkgfYB5SCdMo8z-StdTe7u0BTkfATMT4X9sPBiCBEilOv3YxdjyTEW1gmr6JizwsTqiSAmo6h-WYyi8W3ilsoZugsNInfWZbCVlje-6Jrv6WxZYmT5g5yU8mvmhlMoMNARW8NDJvGoarXshlB3dILmpXi68WC7X0gg83"
+                alt="Cozi Logo"
+                height="40"
+                style="display:block;"
+              />
+            </td>
+          </tr>
+
+          <!-- Hero Section -->
+          <tr>
+            <td align="center" style="padding:48px 32px;">
+              <h1 style="margin:0 0 16px 0;font-size:28px;font-weight:700;color:#0f172a;line-height:1.3;">
+                Welcome to Cozi, {{ user_name }}!
+              </h1>
+              <p style="margin:0 0 32px 0;font-size:16px;color:#475569;line-height:1.6;max-width:440px;">
+                We're thrilled to have you on board. Cozi is designed to help you streamline your workflow and achieve your goals faster than ever before.
+              </p>
+              <!-- CTA Button -->
+
+                href="{{ verification_url }}"
+                style="display:inline-block;background-color:#0854b3;color:#ffffff;padding:16px 32px;border-radius:6px;font-size:16px;font-weight:600;text-decoration:none;box-shadow:0 2px 6px rgba(8,84,179,0.3);"
+              >
+                Get Started
+              </a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:32px;border-top:1px solid #f1f5f9;">
+              <!-- Social Links -->
+              <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+                <tr>
+                  <td style="padding:0 12px;">
+                    <a href="#" style="color:#94a3b8;font-size:14px;text-decoration:none;">Twitter</a>
+                  </td>
+                  <td style="padding:0 12px;">
+                    <a href="#" style="color:#94a3b8;font-size:14px;text-decoration:none;">LinkedIn</a>
+                  </td>
+                  <td style="padding:0 12px;">
+                    <a href="#" style="color:#94a3b8;font-size:14px;text-decoration:none;">Instagram</a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 8px 0;font-size:13px;color:#94a3b8;">© 2026 Cozi, Inc. All rights reserved.</p>
+              <p style="margin:0 0 24px 0;font-size:13px;color:#94a3b8;">123 Tech Avenue, Silicon Valley, CA 94000, Philippines</p>
+
+              <div style="border-top:1px solid #f1f5f9;padding-top:24px;">
+                <p style="margin:0;font-size:13px;color:#94a3b8;">
+                  Don't want to receive these emails anymore?
+                  <a href="#" style="color:#4ea7e5;text-decoration:underline;">Unsubscribe here</a>.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

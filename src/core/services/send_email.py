@@ -1,16 +1,18 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, EmailStr
 
-env = Environment(loader=FileSystemLoader("templates/emails"))
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates" / "emails"
+env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_USER = "cozi@gmail.com"
-SMTP_PASS = ""
+SMTP_USER = "josevincent727@gmail.com"
+SMTP_PASS = "oajxwwdilkmgxwch"
 
 
 class SendEmailRequestDTO(BaseModel):
@@ -32,9 +34,9 @@ def send_email(request_dto: SendEmailRequestDTO):
 
     html_template = env.get_template(request_dto.template_name)
 
-    if request_dto.html_substitutions:
+    # ALWAYS RENDER THE TEMPLATE
 
-        html_template = html_template.render(**request_dto.html_substitutions)
+    html_template = html_template.render(**(request_dto.html_substitutions or {}))
 
     # BUILD MESSAGE
 
@@ -48,7 +50,7 @@ def send_email(request_dto: SendEmailRequestDTO):
 
     msg["To"] = request_dto.to
 
-    msg.attach(MIMEText(html_template, "html"))
+    msg.attach(MIMEText(html_template, "html", "utf-8"))
 
     # SEND EMAIL
 

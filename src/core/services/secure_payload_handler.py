@@ -59,11 +59,12 @@ if __name__ == "__main__":
         "first_name": "jv",
         "last_name": "carpena",
         "password": "jv1234",
+        "phone": "",
     }
 
     payload_login = {
-        "email": "jm_roales@gmail.com",
-        "password": "jm1234",
+        "email": "jvcarpena2@gmail.com",
+        "password": "jv1234",
     }
 
     signup_encrypted = SecurePayloadHandler(data_to_encrypt=payload_signup).encrypt_payload()
