@@ -31,11 +31,7 @@ def check_if_empty_str(value: str):
 
 class EncryptedDataDTO(BaseModel):
 
-    ciphertext: str
-
-    nonce: str
-
-    tag: str
+    data: str
 
 
 class DecryptedSignUpDataDTO(BaseModel):

@@ -9,6 +9,7 @@ dependencies = [
     "pygtrie~=2.5.0",
     "pyjwt",
     "pycryptodome",
+    "python-multipart",
     "bcrypt",
     "opentelemetry-distro==0.58b0",
     "opentelemetry-exporter-otlp",

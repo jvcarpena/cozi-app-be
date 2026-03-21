@@ -15,7 +15,7 @@ def verify_guest(encrypted_data: EncryptedDataDTO, session: Session):
     # DECRYPT DATA
 
     decrypted_user_data: DecryptedSignUpDataDTO = SecurePayloadHandler(
-        data_to_decrypt=encrypted_data.model_dump()
+        data_to_decrypt=encrypted_data.data
     ).decrypt_payload(is_sign_up=True)
 
     # GET THE GUEST FROM THE DB AND CHECK IF THE GUEST EXISTS

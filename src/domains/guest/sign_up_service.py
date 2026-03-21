@@ -32,7 +32,7 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
     # DECRYPT DATA
 
     decrypted_user_data: DecryptedSignUpDataDTO = SecurePayloadHandler(
-        data_to_decrypt=encrypted_data.model_dump()
+        data_to_decrypt=encrypted_data.data
     ).decrypt_payload(is_sign_up=True)
 
     # GET EXISTING USER FROM THE DB
@@ -64,7 +64,7 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
                         subject="Email Verification",
                         template_name="sign_up_email.html",
                         html_substitutions={
-                            "verification_url": "",
+                            "verification_url": f"http://127.0.0.1:8000/guest/verification?d={encrypted_data.data}",
                             "user_name": decrypted_user_data.first_name,
                         },
                     )
@@ -101,8 +101,8 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
             to=decrypted_user_data.email,
             subject="Email Verification",
             template_name="sign_up_email.html",
-            html_substitution={
-                "verification_url": "",
+            html_substitutions={
+                "verification_url": f"http://127.0.0.1:8000/guest/verification?d={encrypted_data.data}",
                 "user_name": decrypted_user_data.first_name,
             },
         )

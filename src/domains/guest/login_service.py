@@ -21,7 +21,7 @@ class LoginResponseDTO(BaseModel):
 
     last_name: str
 
-    phone_number: str
+    phone_number: str | None = None
 
     token: str
 
@@ -31,7 +31,7 @@ def login(encrypted_data: EncryptedDataDTO, session: Session):
     # DECRYPT DATA
 
     decrypted_user_data: DecryptedLoginDataDTO = SecurePayloadHandler(
-        data_to_decrypt=encrypted_data.model_dump()
+        data_to_decrypt=encrypted_data.data
     ).decrypt_payload()
 
     # GET GUEST OBJECT FROM THE DB
@@ -67,7 +67,7 @@ def login(encrypted_data: EncryptedDataDTO, session: Session):
     # CREATE RESPONSE
 
     response = LoginResponseDTO(
-        user_id=guest.id,
+        guest_id=guest.id,
         email_address=guest.email_address,
         first_name=guest.first_name,
         last_name=guest.last_name,
