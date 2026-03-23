@@ -23,4 +23,13 @@ dependencies = [
 [project.optional-dependencies]
 local = [
     "black",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "testcontainers[postgres]",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+log_cli = true
+addopts = "--import-mode=importlib -p core.services.load_test_env"
