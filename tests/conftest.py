@@ -1,3 +1,6 @@
+from datetime import datetime, timezone, timedelta
+
+import bcrypt
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -5,6 +8,8 @@ from fastapi.testclient import TestClient
 from testcontainers.postgres import PostgresContainer
 
 from core.models.base import Base
+from core.models.guest import Guest
+from core.models.guest_verification import GuestVerification
 from core.services import auto_session
 from main import app
 
@@ -18,7 +23,7 @@ def container_engine():
     """
 
     with PostgresContainer("postgres:16") as postgres:
-        url = postgres.get_connection_url().replace("postgresql://", "postgresql+psycopg://")
+        url = postgres.get_connection_url(driver="psycopg")
         auto_session.engine = create_engine(url)
         yield auto_session.engine
 
@@ -54,3 +59,73 @@ def client(db_session):
 
     with TestClient(app) as client:
         yield client
+
+
+@pytest.fixture
+def guest(db_session):
+    db_session.add(
+        guest := Guest(
+            id="guest",
+            email_address="guest@gmail.com",
+            hashed_password=bcrypt.hashpw("guest1234".encode("utf-8"), bcrypt.gensalt()),
+            first_name="verified",
+            last_name="guest",
+        )
+    )
+
+    db_session.add(
+        GuestVerification(
+            guest_id=guest.id,
+            latest_email_sent_at=datetime.now(tz=timezone.utc),
+            verified_at=datetime.now(tz=timezone.utc),
+        )
+    )
+
+    db_session.commit()
+    yield guest
+
+
+@pytest.fixture
+def unverified_guest(db_session):
+    db_session.add(
+        unverified_guest := Guest(
+            id="unverified_guest",
+            email_address="unverified_guest@gmail.com",
+            hashed_password=bcrypt.hashpw("unverified1234".encode("utf-8"), bcrypt.gensalt()),
+            first_name="unverified",
+            last_name="guest",
+        )
+    )
+
+    db_session.add(
+        GuestVerification(
+            guest_id=unverified_guest.id,
+            latest_email_sent_at=datetime.now(tz=timezone.utc),
+        )
+    )
+
+    db_session.commit()
+    yield unverified_guest
+
+
+@pytest.fixture
+def unverified_guest_expired_link(db_session):
+    db_session.add(
+        unverified_guest_expired_link := Guest(
+            id="unverified_guest_expired_link",
+            email_address="unverified_guest_expired_link@gmail.com",
+            hashed_password=bcrypt.hashpw("linkexpired1234".encode("utf-8"), bcrypt.gensalt()),
+            first_name="unverified guest",
+            last_name="link expired",
+        )
+    )
+
+    db_session.add(
+        GuestVerification(
+            guest_id=unverified_guest_expired_link.id,
+            latest_email_sent_at=datetime.now(tz=timezone.utc) - timedelta(hours=25),
+        )
+    )
+
+    db_session.commit()
+    yield unverified_guest_expired_link
