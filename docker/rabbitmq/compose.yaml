@@ -1,0 +1,21 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4.3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: cozi
+      RABBITMQ_DEFAULT_PASS: cozi1234
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  rabbitmq_data:
+    driver: local
