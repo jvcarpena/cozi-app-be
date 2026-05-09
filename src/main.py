@@ -8,11 +8,13 @@ from fastapi.middleware.asyncexitstack import AsyncExitStackMiddleware
 
 # noinspection PyProtectedMember
 from opentelemetry._logs import set_logger_provider
+
+# noinspection PyProtectedMember
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 
 # noinspection PyProtectedMember
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry.metrics import set_meter_provider
@@ -23,6 +25,9 @@ from opentelemetry.sdk._logs import LoggerProvider
 # noinspection PyProtectedMember
 from opentelemetry.sdk._logs._internal.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
+
+# noinspection PyProtectedMember
+from opentelemetry.sdk.metrics._internal.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -86,14 +91,11 @@ resource = Resource.create(attributes={"service.name": "cozi-develop"})
 
 # METRICS. This will scrape and expose the http://app:8000/metrics automatically.
 
-set_meter_provider(
-    MeterProvider(
-        resource=resource,
-        metric_readers=[PrometheusMetricReader()],
-    )
-)
+otlp_exporter = OTLPMetricExporter(endpoint="otel-collector:4317", insecure=True)
 
-Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+set_meter_provider(MeterProvider(resource=resource, metric_readers=[PeriodicExportingMetricReader(otlp_exporter)]))
+
+Instrumentator().instrument(app)
 
 # TEMPO
 

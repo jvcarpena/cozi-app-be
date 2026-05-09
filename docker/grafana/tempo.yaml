@@ -19,7 +19,7 @@ ingester:
 metrics_generator:
   ring:
     kvstore:
-      store: inmemory          # single node, no consul/etcd needed
+      store: inmemory
   storage:
     path: /var/tempo/generator/wal
   traces_storage:
@@ -37,7 +37,6 @@ storage:
     wal:
       path: /var/tempo/wal
 
-# Enable the local-blocks processor per tenant (required - disabled by default)
 overrides:
   defaults:
     metrics_generator:

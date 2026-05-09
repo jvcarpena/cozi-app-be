@@ -23,6 +23,18 @@ datasources:
       filterByTraceID: true
     tracesToMetrics:
       datasourceUid: Prometheus
+      tags:
+        - key: service.name
+          value: service_name
+        - key: http.route
+          value: http_route
+      queries:
+        - name: "Request Rate"
+          query: 'rate(traces_spanmetrics_calls_total{$$__tags}[5m])'
+        - name: "Error Rate"
+          query: 'rate(traces_spanmetrics_calls_total{$$__tags,status_code="STATUS_CODE_ERROR"}[5m])'
+        - name: "P95 Latency"
+          query: 'histogram_quantile(0.95,rate(traces_spanmetrics_duration_milliseconds_bucket{$$__tags}[5m]))'
     serviceMap:
       datasourceUid: Prometheus
 

@@ -30,7 +30,7 @@ services:
     image: otel/opentelemetry-collector-contrib:latest
     command: ["--config=/etc/otel-collector.yaml"]
     ports:
-      - "4317:4317"    # OTLP gRPC — your FastAPI app sends here
+      - "4317:4317"    # OTLP gRPC — FastAPI app sends here
       - "4318:4318"    # OTLP HTTP — optional
       - "8889:8889"    # Prometheus scrapes collector metrics here
     volumes:

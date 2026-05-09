@@ -14,6 +14,19 @@ processors:
     check_interval: 1s
     limit_mib: 256
 
+connectors:
+  spanmetrics:
+    namespace: traces_spanmetrics
+    histogram:
+      explicit:
+        buckets: [5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s]
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: http.route
+    exemplars:
+      enabled: true
+
 exporters:
   otlp/tempo:
     endpoint: "tempo:4317"
@@ -26,7 +39,7 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 120s
 
-  otlphttp/loki:
+  otlp_http/loki:
     endpoint: "http://loki:3100/otlp"
     tls:
       insecure: true
@@ -39,14 +52,14 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp/tempo]
+      exporters: [otlp/tempo, spanmetrics]
 
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/loki]
+      exporters: [otlp_http/loki]
 
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, spanmetrics]
       processors: [memory_limiter, batch]
       exporters: [prometheus]
