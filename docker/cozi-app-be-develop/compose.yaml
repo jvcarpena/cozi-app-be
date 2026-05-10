@@ -3,6 +3,7 @@ services:
     build:
       context: ../../
       dockerfile: docker/cozi-app-be-develop/Dockerfile
+      target: fastapi
     env_file:
       - ../../env/develop.env
     ports:
@@ -11,7 +12,24 @@ services:
       - ../../src:/app/src
     networks:
       - observability
+      - rabbitmq_network
+
+  email_consumer:
+    build:
+      context: ../../
+      dockerfile: docker/cozi-app-be-develop/Dockerfile
+      target: email_consumer
+    env_file:
+      - ../../env/develop.env
+    volumes:
+      - ../../src:/app/src
+    restart: unless-stopped
+    networks:
+      - rabbitmq_network
+      - observability
 
 networks:
   observability:
+    external: true
+  rabbitmq_network:
     external: true

@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.security import APIKeyHeader
 from fastapi.templating import Jinja2Templates
 
-from core.services.auto_session import AutoSession
+from core.services.auto_session import AutoSession, AsyncAutoSession
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO
 from domains.guest.login_service import LoginResponseDTO, login
 from domains.guest.logout_service import logout
@@ -21,9 +21,9 @@ guest_router = APIRouter(prefix="/guest")
 
 
 @guest_router.post("/sign-up")
-def do_sign_up(encrypted_data: Annotated[EncryptedDataDTO, Body()], session: AutoSession):
+async def do_sign_up(encrypted_data: Annotated[EncryptedDataDTO, Body()], session: AutoSession):
 
-    return sign_up(encrypted_data, session)
+    return await sign_up(encrypted_data, session)
 
 
 @guest_router.get("/verification", response_class=HTMLResponse)

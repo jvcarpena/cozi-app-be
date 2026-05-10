@@ -96,7 +96,7 @@ app.include_router(guest_router)
 
 resource = Resource.create(attributes={"service.name": "cozi-develop"})
 
-# METRICS. This will scrape and expose the http://app:8000/metrics automatically.
+# THIS WILL PUSH THE METRICS DATA TO THE OTEL-COLLECTOR.
 
 otlp_exporter = OTLPMetricExporter(endpoint="otel-collector:4317", insecure=True)
 

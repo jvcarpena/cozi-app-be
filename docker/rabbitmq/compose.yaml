@@ -15,7 +15,14 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - rabbitmq_network
 
 volumes:
   rabbitmq_data:
     driver: local
+
+networks:
+  rabbitmq_network:
+    name: rabbitmq_network
+    driver: bridge

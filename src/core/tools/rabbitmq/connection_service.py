@@ -2,7 +2,7 @@ import os
 
 import aio_pika
 
-RABBITMQ_URL = os.environ.get("RABBITMQ_URL", "amqp://cozi:cozi1234@localhost:5672/")
+RABBITMQ_URL = os.environ.get("RABBITMQ_URL", "amqp://cozi:cozi1234@rabbitmq:5672/")
 
 _connection: aio_pika.RobustConnection = None
 
