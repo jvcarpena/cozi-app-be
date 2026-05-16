@@ -68,16 +68,21 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
+#    ports:
+#      - "3000:3000" TRAEFIK WILL NOW HANDLE THIS SINCE IT IS THE MAIN ENTRY POINT TO ALL THE SERVICES
     volumes:
       - ../../docker/grafana/grafana.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - grafana-storage:/var/lib/grafana
     environment:
       - GF_SERVER_ROOT_URL=/grafana
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
-      - GF_AUTH_ANONYMOUS_ENABLED=true          # optional: skip login for local dev
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin        # optional: skip login for local dev
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`monitoring.localhost`) && PathPrefix(`/grafana`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     restart: always
     depends_on:
       - tempo
@@ -85,6 +90,7 @@ services:
       - loki
       - otel-collector
     networks:
+      - traefik-public
       - observability
 
 volumes:
@@ -94,6 +100,8 @@ volumes:
   loki-storage:
 
 networks:
+  traefik-public:
+    external: true
   observability:
     name: observability
     driver: bridge

@@ -6,11 +6,17 @@ services:
       target: fastapi
     env_file:
       - ../../env/develop.env
-    ports:
-      - "8000:8000"
+#    ports:
+#      - "8000:8000" TRAEFIK WILL NOW HANDLE THIS SINCE IT IS THE MAIN ENTRY POINT TO ALL THE SERVICES
     volumes:
       - ../../src:/app/src
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fastapi.rule=Host(`cozi-api.localhost`)"
+      - "traefik.http.routers.fastapi.entrypoints=web"
+      - "traefik.http.services.fastapi.loadbalancer.server.port=8000"
     networks:
+      - traefik-public
       - observability
       - rabbitmq_network
 
@@ -29,6 +35,8 @@ services:
       - observability
 
 networks:
+  traefik-public:
+    external: true
   observability:
     external: true
   rabbitmq_network:
