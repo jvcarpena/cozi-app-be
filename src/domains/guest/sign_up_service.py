@@ -10,8 +10,8 @@ from sqlalchemy.orm import Session
 from core.models.guest import Guest
 from core.models.guest_verification import GuestVerification
 from core.services.secure_payload_handler import SecurePayloadHandler
-from core.services.send_email import send_email, SendEmailRequestDTO
-from core.tools.rabbitmq.publisher import publish_message
+from core.services.send_email import SendEmailRequestDTO
+from core.tools.celery.tasks.email_task import send_email_task
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO, DecryptedSignUpDataDTO
 from domains.guest.enums import GuestErrorMessage
 
@@ -31,7 +31,7 @@ def generate_unique_guest_id(session: Session):
             return generated_guest_id
 
 
-async def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
+def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
 
     # DECRYPT DATA
 
@@ -62,8 +62,8 @@ async def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
             # IF YES, RESEND VERIFICATION EMAIL
             if existing_user.verification.latest_email_sent_at < datetime.now(tz=timezone.utc) - timedelta(hours=24):
 
-                await publish_message(
-                    event=SendEmailRequestDTO(
+                send_email_task.delay(
+                    SendEmailRequestDTO(
                         to=existing_user.email_address,
                         subject="Email Verification",
                         template_name="sign_up_email.html",
@@ -71,8 +71,7 @@ async def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
                             "verification_url": f"http://127.0.0.1:8000/guest/verification?d={encrypted_data.data}",
                             "user_name": decrypted_user_data.first_name,
                         },
-                    ).model_dump(),
-                    queue_name=QUEUE_NAME,
+                    ).model_dump()
                 )
 
                 # UPDATE USER DATA JUST IN CASE THE USER CHANGED SOME DATA
@@ -101,8 +100,8 @@ async def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
 
     # IF NO EXISTING USER, SEND VERIFICATION EMAIL
 
-    await publish_message(
-        event=SendEmailRequestDTO(
+    send_email_task.delay(
+        SendEmailRequestDTO(
             to=decrypted_user_data.email,
             subject="Email Verification",
             template_name="sign_up_email.html",
@@ -110,8 +109,7 @@ async def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
                 "verification_url": f"http://127.0.0.1:8000/guest/verification?d={encrypted_data.data}",
                 "user_name": decrypted_user_data.first_name,
             },
-        ).model_dump(),
-        queue_name=QUEUE_NAME,
+        ).model_dump()
     )
 
     # GENERATE UNIQUE ID

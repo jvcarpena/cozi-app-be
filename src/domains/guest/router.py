@@ -21,9 +21,9 @@ guest_router = APIRouter(prefix="/guest")
 
 
 @guest_router.post("/sign-up")
-async def do_sign_up(encrypted_data: Annotated[EncryptedDataDTO, Body()], session: AutoSession):
+def do_sign_up(encrypted_data: Annotated[EncryptedDataDTO, Body()], session: AutoSession):
 
-    return await sign_up(encrypted_data, session)
+    return sign_up(encrypted_data, session)
 
 
 @guest_router.get("/verification", response_class=HTMLResponse)

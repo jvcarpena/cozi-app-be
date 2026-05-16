@@ -42,7 +42,6 @@ from core.tools.fastapi.auto_tag_routes import auto_tag_routes
 from core.tools.fastapi.exception_handlers import exception_handlers
 from core.tools.fastapi.middlewares import middlewares
 from core.tools.opentelemetry.logging_handler import CustomLoggingHandler
-from core.tools.rabbitmq.connection_service import get_connection, close_connection
 from domains.guest.router import guest_router
 
 
@@ -75,13 +74,7 @@ async def lifespan(_app: FastAPI):
 
     auto_tag_routes(_app)
 
-    await get_connection()
-    logging.info("RabbitMQ connected")
-
     yield
-
-    await close_connection()
-    logging.info("RabbitMQ connection closed")
 
 
 app = CustomFastApi(

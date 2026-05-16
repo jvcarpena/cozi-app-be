@@ -14,11 +14,11 @@ services:
       - observability
       - rabbitmq_network
 
-  email_consumer:
+  celery_worker:
     build:
       context: ../../
       dockerfile: docker/cozi-app-be-develop/Dockerfile
-      target: email_consumer
+      target: celery_worker
     env_file:
       - ../../env/develop.env
     volumes:

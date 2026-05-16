@@ -12,8 +12,8 @@ COPY src/ ./src
 
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-# FOR EMAIL CONSUMER
+# FOR CELERY WORKER
 
-FROM fastapi AS email_consumer
+FROM fastapi AS celery_worker
 
-CMD ["python", "src/core/tools/rabbitmq/consumers/email_consumer.py"]
+CMD ["celery", "-A", "core.tools.celery.celery_app", "worker", "--loglevel=info"]
