@@ -1,18 +1,12 @@
 services:
   traefik:
     image: traefik:v3.0
-    command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedByDefault=false"
-      - "--providers.docker.network=traefik-public"
-      - "--entrypoints.web.address=:80"
-      - "--api.dashboard=true"
-      - "--api.insecure=true"
     ports:
       - "80:80"
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
+      - "../../docker/traefik/traefik.yaml:/etc/traefik/traefik.yaml"
     networks:
       - traefik-public
 
