@@ -5,9 +5,12 @@ from core.tools.celery.celery_app import celery
 
 
 @celery.task(bind=True, max_retries=4, default_retry_delay=40)
-def send_email_task(self, request_dto: dict):
+def send_email_task(self, request_dict: dict):
+
+    request_dto = SendEmailRequestDTO.model_validate(request_dict)
+
     try:
-        send_email(SendEmailRequestDTO(**request_dto))
+        send_email(request_dto)
 
     except Exception as e:
         logging.error(f"Failed to send email to {request_dto.get("to")}: {e}")
