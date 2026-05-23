@@ -24,10 +24,12 @@ dependencies = [
 [project.optional-dependencies]
 local = [
     "black",
+    "celery[pytest]",
+    "pika",
     "pytest",
     "pytest-cov",
     "pytest-mock",
-    "testcontainers[postgres]",
+    "testcontainers[postgres, rabbitmq]",
 ]
 
 [tool.pytest.ini_options]

@@ -6,13 +6,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from testcontainers.postgres import PostgresContainer
+from testcontainers.rabbitmq import RabbitMqContainer
 
 from core.models.base import Base
 from core.models.guest import Guest
 from core.models.guest_verification import GuestVerification
 from core.models.organization import Organization
 from core.services import auto_session
+from core.tools.celery.celery_app import celery as celery_instance
 from main import app
+
+pytest_plugins = ("celery.contrib.pytest",)
 
 
 @pytest.fixture(autouse=False, scope="session")
@@ -60,6 +64,37 @@ def client(db_session):
 
     with TestClient(app) as client:
         yield client
+
+
+@pytest.fixture(scope="session")
+def rabbitmq_container():
+    with RabbitMqContainer("rabbitmq:3.13") as rabbitmq:
+        yield rabbitmq
+
+
+@pytest.fixture(scope="session")
+def configure_celery_for_tests(rabbitmq_container):
+    host = rabbitmq_container.get_container_host_ip()
+    port = rabbitmq_container.get_exposed_port(5672)
+
+    broker_url = f"amqp://guest:guest@{host}:{port}/"
+
+    celery_instance.conf.update(broker_url=broker_url)  # noqa
+
+
+@pytest.fixture(scope="session")
+def celery_app(configure_celery_for_tests):
+
+    return celery_instance
+
+
+@pytest.fixture(scope="session")
+def celery_worker_parameters(configure_celery_for_tests):
+    return {
+        "queues": ("celery",),
+        "concurrency": 1,
+        "perform_ping_check": False,
+    }
 
 
 @pytest.fixture

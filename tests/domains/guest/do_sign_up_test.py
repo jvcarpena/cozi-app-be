@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,7 @@ def do_encrypt_data(data: dict) -> str:
     return SecurePayloadHandler(data_to_encrypt=data).encrypt_payload().data
 
 
+@pytest.mark.usefixtures("celery_worker")
 def test_do_sign_up(client, db_session, container_engine):
     encrypted_data = do_encrypt_data(
         {
@@ -32,7 +34,6 @@ def test_do_sign_up(client, db_session, container_engine):
     assert response.status_code == 200
 
     with Session(container_engine) as session:
-
         user = session.scalars(select(Guest).where(Guest.email_address == "test_email@gmail.com")).one()
 
         assert user is not None
