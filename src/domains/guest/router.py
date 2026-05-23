@@ -10,6 +10,7 @@ from core.services.auto_session import AutoSession, AsyncAutoSession
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO
 from domains.guest.login_service import LoginResponseDTO, login
 from domains.guest.logout_service import logout
+from domains.guest.resort.router import resort_router
 from domains.guest.sign_up_service import sign_up
 from domains.guest.verify_guest_service import verify_guest
 
@@ -61,3 +62,6 @@ def do_login(encrypted_data: Annotated[EncryptedDataDTO, Body()], session: AutoS
 def do_logout(auth_token: Annotated[str, Depends(APIKeyHeader(name="Authorization"))]):
 
     return logout(auth_token)
+
+
+(guest_router.include_router(resort_router),)

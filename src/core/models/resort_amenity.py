@@ -17,11 +17,7 @@ class ResortAmenityCategoryEnum(StrEnum):
 
     DINING = "DINING"
 
-    PARKING = "PARKING"
-
-    INTERNET = "INTERNET"
-
-    OUTDOOR = "OUTDOOR"
+    UTILITIES = "UTILITIES"
 
 
 class ResortAmenity(Base, AuditMixin):

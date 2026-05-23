@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -22,4 +22,4 @@ class ResortReview(Base, AuditMixin):
 
     value_rating: Mapped[int] = mapped_column()
 
-    comment: Mapped[str] = mapped_column(Text)
+    comment: Mapped[Optional[str]] = mapped_column(Text)

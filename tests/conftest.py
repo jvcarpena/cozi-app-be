@@ -10,6 +10,7 @@ from testcontainers.postgres import PostgresContainer
 from core.models.base import Base
 from core.models.guest import Guest
 from core.models.guest_verification import GuestVerification
+from core.models.organization import Organization
 from core.services import auto_session
 from main import app
 
@@ -129,3 +130,16 @@ def unverified_guest_expired_link(db_session):
 
     db_session.commit()
     yield unverified_guest_expired_link
+
+
+@pytest.fixture
+def fake_organization(db_session):
+    db_session.add(
+        organization := Organization(
+            name="TEST_ORGANIZATION",
+        )
+    )
+
+    db_session.commit()
+
+    yield organization
