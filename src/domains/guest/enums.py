@@ -10,3 +10,4 @@ class GuestErrorMessage(StrEnum):
     EMAIL_NOT_EXISTS = "Email does not exists."
     EMAIL_NOT_VERIFIED = "Email does not verified."
     INVALID_CREDENTIALS = "Invalid credentials."
+    RESORT_DOES_NOT_EXIST = "Resort does not exist."
