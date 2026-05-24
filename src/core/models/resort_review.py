@@ -1,9 +1,10 @@
 from typing import Any, Optional
 
 from sqlalchemy import ForeignKey, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.models.base import AuditMixin, Base
+from core.models import guest
 
 
 class ResortReview(Base, AuditMixin):
@@ -23,3 +24,7 @@ class ResortReview(Base, AuditMixin):
     value_rating: Mapped[int] = mapped_column()
 
     comment: Mapped[Optional[str]] = mapped_column(Text)
+
+    # RELATIONSHIP
+
+    guest: Mapped["guest.Guest"] = relationship()

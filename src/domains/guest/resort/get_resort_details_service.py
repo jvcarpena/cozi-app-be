@@ -47,7 +47,7 @@ class GetResortDetailsResponseDTO(BaseModel):
     data: ResortDTO
 
 
-def get_resort_details(resort_id: Annotated[int, Path(...)], session: Session):
+def get_resort_details(resort_id: Annotated[int, Path(...)], session: Session) -> GetResortDetailsResponseDTO:
 
     resort: Resort = session.scalars(
         select(Resort)

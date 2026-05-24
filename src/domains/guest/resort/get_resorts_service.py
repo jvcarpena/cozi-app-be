@@ -22,7 +22,7 @@ class GetResortsResponseDTO(BaseModel):
     resorts: list[ResortDTO]
 
 
-def get_resorts(session: Session):
+def get_resorts(session: Session) -> GetResortsResponseDTO:
 
     resorts: Sequence[Resort] = session.scalars(
         select(Resort)
