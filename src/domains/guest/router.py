@@ -7,6 +7,7 @@ from fastapi.security import APIKeyHeader
 from fastapi.templating import Jinja2Templates
 
 from core.services.auto_session import AutoSession, AsyncAutoSession
+from domains.guest.booking.router import booking_router
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO
 from domains.guest.login_service import LoginResponseDTO, login
 from domains.guest.logout_service import logout
@@ -64,4 +65,7 @@ def do_logout(auth_token: Annotated[str, Depends(APIKeyHeader(name="Authorizatio
     return logout(auth_token)
 
 
-(guest_router.include_router(resort_router),)
+(
+    guest_router.include_router(resort_router),
+    guest_router.include_router(booking_router),
+)
