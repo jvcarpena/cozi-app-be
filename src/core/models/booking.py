@@ -37,9 +37,9 @@ class Booking(Base, AuditMixin):
 
     status: Mapped[BookingStatusEnum] = mapped_column(String(24))
 
-    check_in: Mapped[date] = mapped_column()
+    check_in: Mapped[datetime] = mapped_column(UTCDateTime)
 
-    check_out: Mapped[date] = mapped_column()
+    check_out: Mapped[datetime] = mapped_column(UTCDateTime)
 
     num_guests: Mapped[int] = mapped_column()
 
