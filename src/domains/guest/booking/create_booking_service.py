@@ -1,80 +1,106 @@
 from dataclasses import dataclass
 from datetime import timezone
+from decimal import Decimal
 from typing import Optional, Annotated
+from zoneinfo import ZoneInfo
 
-from fastapi import Body, HTTPException
-from pydantic import BaseModel, AwareDatetime
-from sqlalchemy import select, and_
+from fastapi import Body
+from pydantic import BaseModel, AwareDatetime, model_validator
 
-from core.models.booking import Booking
-from core.models.resort import Resort
-from core.models.resort_availability import ResortAvailability, ResortAvailabilityStatus
+from core.models.booking import Booking, BookingStatusEnum
 from core.services.auto_session import AutoSession
-from domains.guest.enums import GuestErrorMessage
+from core.services.auto_user import AutoUser
+from domains.guest.booking.services.check_availability_conflict import check_availability_conflict
+from domains.guest.booking.services.compute_booking_price import compute_booking_price
+from domains.guest.booking.services.get_active_resort import get_active_resort
+from domains.guest.booking.services.validate_guest_capacity import validate_guest_capacity
 
 
 @dataclass
 class CreateBookingContext:
+    user: AutoUser
     session: AutoSession
     request_dto: "Annotated[CreateBookingRequestDTO, Body()]"
 
 
 class CreateBookingRequestDTO(BaseModel):
-    guest_id: str
     resort_id: int
     check_in: AwareDatetime
     check_out: AwareDatetime
     num_guests: int
     special_request: Optional[str] = None
 
+    @model_validator(mode="after")
+    def validate_fields(self) -> "CreateBookingRequestDTO":
+        if self.check_in > self.check_out:
+            raise ValueError("check_out must be after check_in")
+        if self.num_guests < 1:
+            raise ValueError("num_guests must be at least 1")
+        return self
 
-def create_booking(context: CreateBookingContext):
 
-    # CHECK IF ANY DATE IN RANGE IS ALREADY BOOKED, BLOCKED, OR UNDER MAINTENANCE
+class CreateBookingResponseDTO(BaseModel):
+    id: int
+    resort_id: int
+    resort_name: str
+    status: BookingStatusEnum
+    check_in: AwareDatetime
+    check_out: AwareDatetime
+    duration_hours: float
+    booking_type: str
+    nights: int | None
+    num_guests: int
+    total_price: Decimal
+    currency: str
+    special_request: str | None
+    created_at: AwareDatetime
 
-    conflict = context.session.scalars(
-        select(ResortAvailability)
-        .where(
-            and_(
-                ResortAvailability.resort_id == context.request_dto.resort_id,
-                ResortAvailability.date >= context.request_dto.check_in.date(),
-                ResortAvailability.date < context.request_dto.check_out.date(),
-                ResortAvailability.status.in_(
-                    [
-                        ResortAvailabilityStatus.BOOKED,
-                        ResortAvailabilityStatus.BLOCKED,
-                        ResortAvailabilityStatus.MAINTENANCE,
-                    ]
-                ),
-            )
-        )
-        .limit(1)
-    ).one_or_none()
 
-    if conflict:
-        raise HTTPException(status_code=409, detail=GuestErrorMessage.RESORT_IS_NOT_AVAILABLE.name)
+def create_booking(context: CreateBookingContext) -> CreateBookingResponseDTO:
 
-    # GET RESORT TO CHECK THE MAX CAPACITY OF GUEST
+    resort = get_active_resort(context.session, context.request_dto.resort_id)
 
-    resort = context.session.scalars(
-        select(Resort).where(
-            Resort.id == context.request_dto.resort_id,
-        )
-    ).one()
+    validate_guest_capacity(resort, context.request_dto.num_guests)
 
-    if context.request_dto.num_guests > resort.max_guests:
-        raise HTTPException(status_code=400, detail=GuestErrorMessage.NUMBER_OF_GUESTS_EXCEEDS_RESORT_CAPACITY.name)
+    check_in_date = context.request_dto.check_in.date()
+
+    check_out_date = context.request_dto.check_out.date()
+
+    check_availability_conflict(context.session, context.request_dto.resort_id, check_in_date, check_out_date)
+
+    duration_hours = (context.request_dto.check_out - context.request_dto.check_in).total_seconds() / 3600
+
+    booking_type, nights, total_price = compute_booking_price(resort, duration_hours)
 
     context.session.add(
-        Booking(
-            guest_id=context.request_dto.guest_id,
+        booking := Booking(
+            guest_id=context.user.id,
+            resort_id=resort.id,
+            status=BookingStatusEnum.PENDING,
             check_in=context.request_dto.check_in.astimezone(timezone.utc),
             check_out=context.request_dto.check_out.astimezone(timezone.utc),
             num_guests=context.request_dto.num_guests,
+            total_price=total_price,
+            currency=resort.currency,
             special_request=context.request_dto.special_request,
         )
     )
 
     context.session.commit()
 
-    return
+    return CreateBookingResponseDTO(
+        id=booking.id,
+        resort_id=resort.id,
+        resort_name=resort.name,
+        status=booking.status,
+        check_in=context.request_dto.check_in,
+        check_out=context.request_dto.check_out,
+        duration_hours=duration_hours,
+        booking_type=booking_type,
+        nights=nights,
+        num_guests=booking.num_guests,
+        total_price=total_price,
+        currency=booking.currency,
+        special_request=booking.special_request,
+        created_at=booking.created_at.astimezone(ZoneInfo("Asia/Manila")),
+    )

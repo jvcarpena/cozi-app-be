@@ -34,6 +34,8 @@ class Resort(Base, AuditMixin):
 
     base_price_per_night: Mapped[Decimal] = mapped_column(Numeric(12, 4))
 
+    base_price_per_day_use: Mapped[Decimal] = mapped_column(Numeric(12, 4))
+
     currency: Mapped[str] = mapped_column(String(10))
 
     max_guests: Mapped[int] = mapped_column()
