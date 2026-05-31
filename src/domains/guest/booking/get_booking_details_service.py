@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import Path, HTTPException
 from pydantic import BaseModel, AwareDatetime
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 
 from core.models.booking import BookingStatusEnum, Booking
@@ -46,10 +46,11 @@ class BookingDetailsResponseDTO(BaseModel):
 def get_booking_details(context: BookingDetailsContext) -> BookingDetailsResponseDTO:
 
     booking = context.session.scalars(
-        select(Booking)
-        .options(selectinload(Booking.resort))
-        .where(
-            Booking.id == context.booking_id,
+        select(Booking).where(
+            and_(
+                Booking.id == context.booking_id,
+                Booking.guest_id == context.user.id,
+            )
         )
     ).one_or_none()
 

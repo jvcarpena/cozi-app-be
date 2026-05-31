@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from domains.guest.booking.cancel_booking_service import cancel_booking
+from domains.guest.booking.cancel_booking_service import cancel_booking, CancelBookingContext
 from domains.guest.booking.create_booking_preview_service import (
     create_booking_preview,
     CreateBookingPreviewContext,
@@ -50,6 +50,6 @@ def do_get_booking_details(context: Annotated[BookingDetailsContext, Depends()])
 
 
 @booking_router.put("/{booking_id}/cancel")
-def do_cancel_booking():
+def do_cancel_booking(context: Annotated[CancelBookingContext, Depends()]):
 
-    return cancel_booking()
+    return cancel_booking(context)
