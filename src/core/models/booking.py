@@ -44,6 +44,8 @@ class Booking(Base, AuditMixin):
 
     num_guests: Mapped[int] = mapped_column()
 
+    nights: Mapped[Optional[int]] = mapped_column()
+
     total_price: Mapped[Decimal] = mapped_column(Numeric(12, 4))
 
     currency: Mapped[str] = mapped_column(String(24))

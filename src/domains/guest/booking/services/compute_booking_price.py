@@ -1,5 +1,4 @@
 import math
-from datetime import datetime
 from decimal import Decimal
 
 from core.models.resort import Resort

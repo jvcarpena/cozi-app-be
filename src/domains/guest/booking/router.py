@@ -9,7 +9,11 @@ from domains.guest.booking.create_booking_preview_service import (
     CreateBookingPreviewResponseDTO,
 )
 from domains.guest.booking.create_booking_service import CreateBookingContext, create_booking, CreateBookingResponseDTO
-from domains.guest.booking.get_booking_details_service import get_booking_details
+from domains.guest.booking.get_booking_details_service import (
+    get_booking_details,
+    BookingDetailsContext,
+    BookingDetailsResponseDTO,
+)
 from domains.guest.booking.get_booking_history_service import (
     get_booking_history,
     BookingHistoryContext,
@@ -40,9 +44,9 @@ def do_get_booking_history(context: Annotated[BookingHistoryContext, Depends()])
 
 
 @booking_router.get("/{booking_id}")
-def do_get_booking_details():
+def do_get_booking_details(context: Annotated[BookingDetailsContext, Depends()]) -> BookingDetailsResponseDTO:
 
-    return get_booking_details()
+    return get_booking_details(context)
 
 
 @booking_router.put("/{booking_id}/cancel")

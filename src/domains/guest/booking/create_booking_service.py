@@ -80,6 +80,7 @@ def create_booking(context: CreateBookingContext) -> CreateBookingResponseDTO:
             check_in=context.request_dto.check_in.astimezone(timezone.utc),
             check_out=context.request_dto.check_out.astimezone(timezone.utc),
             num_guests=context.request_dto.num_guests,
+            nights=nights if nights else None,
             total_price=total_price,
             currency=resort.currency,
             special_request=context.request_dto.special_request,
