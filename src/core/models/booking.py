@@ -4,9 +4,10 @@ from enum import StrEnum
 from typing import Any, Optional
 
 from sqlalchemy import ForeignKey, String, Numeric, Text, Index
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.models.base import AuditMixin, Base
+from core.models import resort
 from core.tools.sqlalchemy.utc_date_time import UTCDateTime
 
 
@@ -52,3 +53,7 @@ class Booking(Base, AuditMixin):
     cancelled_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
 
     cancel_reason: Mapped[Optional[str]] = mapped_column(Text)
+
+    # RELATIONSHIPS
+
+    resort: Mapped["resort.Resort"] = relationship()
