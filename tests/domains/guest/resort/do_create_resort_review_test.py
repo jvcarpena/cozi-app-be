@@ -2,22 +2,24 @@ from sqlalchemy import select, and_
 from sqlalchemy.orm import Session
 
 from core.models.resort_review import ResortReview
+from core.services.http_request_helper import HTTPRequestHelper
 from domains.guest.enums import GuestErrorMessage
 
 
 def test_create_resort_review(client, container_engine, resort, guest):
     path = f"/test/api/v1/guest/resorts/{resort.id}/reviews"
 
-    request_payload = {
-        "resort_id": resort.id,
-        "guest_id": guest.id,
-        "overall_rating": 4,
-        "cleanliness_rating": 4,
-        "value_rating": 4,
-        "comment": f"TEST_COMMENT_RESORT_{resort.name}",
-    }
+    request = HTTPRequestHelper(
+        body={
+            "resort_id": resort.id,
+            "overall_rating": 4,
+            "cleanliness_rating": 4,
+            "value_rating": 4,
+            "comment": f"TEST_COMMENT_RESORT_{resort.name}",
+        }
+    ).create_request(guest)
 
-    response = client.post(path, json=request_payload)
+    response = client.post(path, headers=request.headers, json=request.body)
 
     assert response.status_code == 200
 
@@ -40,18 +42,19 @@ def test_create_resort_review(client, container_engine, resort, guest):
 def test_create_resort_review_invalid_resort_id(client, guest):
     path = "/test/api/v1/guest/resorts/44/reviews"
 
-    request_payload = {
-        "resort_id": 44,
-        "guest_id": guest.id,
-        "overall_rating": 4,
-        "cleanliness_rating": 4,
-        "value_rating": 4,
-        "comment": "INVALID_RESORT_ID",
-    }
+    request = HTTPRequestHelper(
+        body={
+            "resort_id": 67,
+            "overall_rating": 4,
+            "cleanliness_rating": 4,
+            "value_rating": 4,
+            "comment": "INVALID_RESORT_ID",
+        }
+    ).create_request(guest)
 
-    response = client.post(path, json=request_payload)
+    response = client.post(path, headers=request.headers, json=request.body)
 
     response_body = response.json()
 
-    assert response.status_code == 400
+    assert response.status_code == 404
     assert response_body["detail"] == GuestErrorMessage.RESORT_DOES_NOT_EXIST.name

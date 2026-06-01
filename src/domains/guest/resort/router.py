@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Body
 
 from core.services.auto_session import AutoSession
+from core.services.auto_user import AutoGuestUser
 from domains.guest.resort.create_resort_review_service import CreateResortReviewRequestDTO, create_resort_review
 from domains.guest.resort.get_resort_details_service import get_resort_details, GetResortDetailsResponseDTO
 from domains.guest.resort.get_resort_reviews_service import get_resort_reviews, GetResortReviewsResponseDTO
@@ -30,6 +31,10 @@ def do_get_resort_reviews(resort_id: Annotated[int, Path(...)], session: AutoSes
 
 
 @resort_router.post("/{resort_id}/reviews")
-def do_create_resort_review(request_dto: Annotated[CreateResortReviewRequestDTO, Body()], session: AutoSession):
+def do_create_resort_review(
+    request_dto: Annotated[CreateResortReviewRequestDTO, Body()],
+    session: AutoSession,
+    guest: AutoGuestUser,
+):
 
-    return create_resort_review(request_dto, session)
+    return create_resort_review(request_dto, session, guest)
