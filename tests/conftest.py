@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from decimal import Decimal
 
 import bcrypt
 import pytest
@@ -12,6 +13,7 @@ from core.models.base import Base
 from core.models.guest import Guest
 from core.models.guest_verification import GuestVerification
 from core.models.organization import Organization
+from core.models.resort import Resort, ResortStatusEnum
 from core.services import auto_session
 from core.tools.celery.celery_app import celery as celery_instance
 from main import app
@@ -178,3 +180,26 @@ def fake_organization(db_session):
     db_session.commit()
 
     yield organization
+
+
+@pytest.fixture
+def resort(db_session, fake_organization):
+    db_session.add(
+        fake_resort := Resort(
+            organization_id=fake_organization.id,
+            name="TEST_RESORT",
+            status=ResortStatusEnum.ACTIVE,
+            description="TEST_RESORT_DESCRIPTION",
+            base_price_per_night=Decimal(25000),
+            base_price_per_day_use=Decimal(12000),
+            currency="PHP",
+            max_guests=25,
+            num_bedrooms=4,
+            num_bathrooms=5,
+            address="TEST_RESORT_ADDRESS",
+        )
+    )
+
+    db_session.commit()
+
+    yield fake_resort
