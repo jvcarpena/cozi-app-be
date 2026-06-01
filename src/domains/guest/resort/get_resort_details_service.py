@@ -61,7 +61,7 @@ def get_resort_details(resort_id: Annotated[int, Path(...)], session: Session) -
     ).one_or_none()
 
     if not resort:
-        raise HTTPException(status_code=400, detail=GuestErrorMessage.RESORT_DOES_NOT_EXIST.name)
+        raise HTTPException(status_code=404, detail=GuestErrorMessage.RESORT_DOES_NOT_EXIST.name)
 
     def build_ratings(reviews: list[ResortReview]) -> ResortRatingDTO:
         if not reviews:

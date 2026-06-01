@@ -32,5 +32,5 @@ def test_do_get_resort_details_invalid_id(client):
 
     response_body = response.json()
 
-    assert response.status_code == 400
+    assert response.status_code == 404
     assert response_body["detail"] == GuestErrorMessage.RESORT_DOES_NOT_EXIST.name
