@@ -16,6 +16,7 @@ def resort(db_session, fake_organization):
             status=ResortStatusEnum.ACTIVE,
             description="TEST_RESORT_DESCRIPTION",
             base_price_per_night=Decimal(25000),
+            base_price_per_day_use=Decimal(12000),
             currency="PHP",
             max_guests=25,
             num_bedrooms=4,

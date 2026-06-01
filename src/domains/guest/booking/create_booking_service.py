@@ -16,13 +16,6 @@ from domains.guest.booking.services.get_active_resort import get_active_resort
 from domains.guest.booking.services.validate_guest_capacity import validate_guest_capacity
 
 
-@dataclass
-class CreateBookingContext:
-    user: AutoUser
-    session: AutoSession
-    request_dto: "Annotated[CreateBookingRequestDTO, Body()]"
-
-
 class CreateBookingRequestDTO(BaseModel):
     resort_id: int
     check_in: AwareDatetime
@@ -37,6 +30,13 @@ class CreateBookingRequestDTO(BaseModel):
         if self.num_guests < 1:
             raise ValueError("num_guests must be at least 1")
         return self
+
+
+@dataclass
+class CreateBookingContext:
+    user: AutoUser
+    session: AutoSession
+    request_dto: Annotated[CreateBookingRequestDTO, Body()]
 
 
 class CreateBookingResponseDTO(BaseModel):

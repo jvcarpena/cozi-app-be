@@ -13,15 +13,15 @@ from core.services.auto_session import AutoSession
 from core.services.auto_user import AutoUser
 
 
+class BookingHistoryRequestDTO(BaseModel):
+    status: BookingStatusEnum
+
+
 @dataclass
 class BookingHistoryContext:
     user: AutoUser
     session: AutoSession
-    request_dto: "Annotated[BookingHistoryRequestDTO, Query()]"
-
-
-class BookingHistoryRequestDTO(BaseModel):
-    status: BookingStatusEnum
+    request_dto: Annotated[BookingHistoryRequestDTO, Query()]
 
 
 class BookingHistoryDTO(BaseModel):

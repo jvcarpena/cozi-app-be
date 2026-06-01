@@ -12,16 +12,16 @@ from core.services.auto_user import AutoUser
 from domains.guest.enums import GuestErrorMessage
 
 
+class CancelBookingRequestDTO(BaseModel):
+    reason: str | None
+
+
 @dataclass
 class CancelBookingContext:
     user: AutoUser
     session: AutoSession
-    booking_id: "Annotated[int, Path(...)]"
-    request_dto: "Annotated[CancelBookingRequestDTO, Body()]"
-
-
-class CancelBookingRequestDTO(BaseModel):
-    reason: str | None
+    booking_id: Annotated[int, Path(...)]
+    request_dto: Annotated[CancelBookingRequestDTO, Body()]
 
 
 def cancel_booking(context: CancelBookingContext):

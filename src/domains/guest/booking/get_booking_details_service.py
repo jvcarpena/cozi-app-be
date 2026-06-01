@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 from fastapi import Path, HTTPException
 from pydantic import BaseModel, AwareDatetime
 from sqlalchemy import select, and_
-from sqlalchemy.orm import selectinload
 
 from core.models.booking import BookingStatusEnum, Booking
 from core.services.auto_session import AutoSession
@@ -18,7 +17,7 @@ from domains.guest.enums import GuestErrorMessage
 class BookingDetailsContext:
     user: AutoUser
     session: AutoSession
-    booking_id: "Annotated[int, Path(...)]"
+    booking_id: Annotated[int, Path(...)]
 
 
 class ResortDTO(BaseModel):
