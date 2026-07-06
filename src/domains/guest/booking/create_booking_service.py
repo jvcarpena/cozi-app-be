@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Optional, Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import Body
+from fastapi import Body, HTTPException
 from pydantic import BaseModel, AwareDatetime, model_validator
 
 from core.models.booking import Booking, BookingStatusEnum
@@ -14,6 +14,7 @@ from domains.guest.booking.services.check_availability_conflict import check_ava
 from domains.guest.booking.services.compute_booking_price import compute_booking_price
 from domains.guest.booking.services.get_active_resort import get_active_resort
 from domains.guest.booking.services.validate_guest_capacity import validate_guest_capacity
+from domains.guest.enums import GuestErrorMessage
 
 
 class CreateBookingRequestDTO(BaseModel):
@@ -25,10 +26,10 @@ class CreateBookingRequestDTO(BaseModel):
 
     @model_validator(mode="after")
     def validate_fields(self) -> "CreateBookingRequestDTO":
-        if self.check_in > self.check_out:
-            raise ValueError("check_out must be after check_in")
+        if self.check_out <= self.check_in:
+            raise HTTPException(status_code=422, detail=GuestErrorMessage.CHECKOUT_MUST_BE_AFTER_CHECK_IN.name)
         if self.num_guests < 1:
-            raise ValueError("num_guests must be at least 1")
+            raise HTTPException(status_code=422, detail=GuestErrorMessage.NUM_GUEST_MUST_BE_AT_LEAST_1.name)
         return self
 
 
