@@ -2,7 +2,7 @@
 name = "cozi-app-be"
 version = "1.0"
 dependencies = [
-    "fastapi[standard]",
+    "fastapi[standard]==0.136.3",
     "psycopg[binary]",
     "sqlalchemy",
     "celery>=5.5.0",

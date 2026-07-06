@@ -14,3 +14,5 @@ class GuestErrorMessage(StrEnum):
     RESORT_IS_NOT_AVAILABLE = "Resort is not available on selected date."
     NUMBER_OF_GUESTS_EXCEEDS_RESORT_CAPACITY = "Number of guests exceeds resort capacity."
     BOOKING_DOES_NOT_EXIST = "Booing does not exist."
+    CHECKOUT_MUST_BE_AFTER_CHECK_IN = "Check out must be after check in"
+    NUM_GUEST_MUST_BE_AT_LEAST_1 = "Num guest must be at least 1"
