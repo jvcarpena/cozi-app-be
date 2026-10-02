@@ -1,4 +1,4 @@
-path = "/test/api/v1/guest/verification"
+path = "/test/api/v1/guest/auth/verification"
 
 
 def test_do_get_verification_page(client):

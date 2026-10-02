@@ -68,7 +68,7 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
                         subject="Email Verification",
                         template_name="sign_up_email.html",
                         html_substitutions={
-                            "verification_url": f"http://cozi-api.localhost/guest/verification?d={encrypted_data.data}",
+                            "verification_url": f"http://cozi-api.localhost/guest/auth/verification?d={encrypted_data.data}",
                             "user_name": decrypted_user_data.first_name,
                         },
                     ).model_dump()
@@ -106,7 +106,7 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
             subject="Email Verification",
             template_name="sign_up_email.html",
             html_substitutions={
-                "verification_url": f"http://cozi-api.localhost/guest/verification?d={encrypted_data.data}",
+                "verification_url": f"http://cozi-api.localhost/guest/auth/verification?d={encrypted_data.data}",
                 "user_name": decrypted_user_data.first_name,
             },
         ).model_dump()

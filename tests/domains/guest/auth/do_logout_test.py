@@ -1,6 +1,6 @@
 from core.services.auth_token_handler import AuthTokenHandler
 
-path = "/test/api/v1/guest/logout"
+path = "/test/api/v1/guest/auth/logout"
 
 
 def test_do_logout(client, guest):

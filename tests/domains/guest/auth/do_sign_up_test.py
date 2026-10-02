@@ -6,7 +6,7 @@ from core.models.guest import Guest
 from core.services.secure_payload_handler import SecurePayloadHandler
 from domains.guest.enums import GuestErrorMessage
 
-path = "/test/api/v1/guest/sign-up"
+path = "/test/api/v1/guest/auth/sign-up"
 
 
 def do_encrypt_data(data: dict) -> str:
@@ -36,7 +36,7 @@ def test_do_sign_up(client, db_session, container_engine):
     with Session(container_engine) as session:
         user = session.scalars(select(Guest).where(Guest.email_address == "test_email@gmail.com")).one()
 
-        assert user is not None
+        assert user.verification.verified_at is None
 
 
 def test_do_sign_up_email_registered(client, guest):
@@ -81,6 +81,7 @@ def test_do_sign_up_check_your_email(client, unverified_guest):
     assert response_body["detail"] == GuestErrorMessage.CHECK_YOUR_EMAIL.name
 
 
+@pytest.mark.usefixtures("celery_worker")
 def test_do_sign_up_unverified_guest_expired_link(client, unverified_guest_expired_link):
     encrypted_data = do_encrypt_data(
         {
@@ -98,3 +99,24 @@ def test_do_sign_up_unverified_guest_expired_link(client, unverified_guest_expir
     )
 
     assert response.status_code == 200
+
+
+def test_do_sign_up_invalid_name(client):
+    encrypted_data = do_encrypt_data(
+        {
+            "email": "invalid_name@gmail.com",
+            "first_name": "inv@lid",
+            "last_name": "name",
+            "password": "test1234",
+            "phone": "",
+        }
+    )
+
+    response = client.post(
+        path,
+        json={"data": encrypted_data},
+    )
+    response_body = response.json()
+
+    assert response.status_code == 400
+    assert response_body["detail"] == GuestErrorMessage.INVALID_NAME.name

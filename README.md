@@ -199,11 +199,11 @@ All routes are prefixed with `/<STAGE>/api/v1/guest`.
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| `POST` | `/guest/sign-up` | Register a guest (encrypted payload) |
-| `GET` | `/guest/verification?d=<token>` | Email verification page |
-| `POST` | `/guest/verification` | Confirm verification |
-| `POST` | `/guest/login` | Log in, returns an auth token |
-| `POST` | `/guest/logout` | Log out |
+| `POST` | `/guest/auth/sign-up` | Register a guest (encrypted payload) |
+| `GET` | `/guest/auth/verification?d=<token>` | Email verification page |
+| `POST` | `/guest/auth/verification` | Confirm verification |
+| `POST` | `/guest/auth/login` | Log in, returns an auth token |
+| `POST` | `/guest/auth/logout` | Log out |
 | `GET` | `/guest/resorts` | List resorts |
 | `GET` | `/guest/resorts/{resort_id}` | Resort details |
 | `GET` | `/guest/resorts/{resort_id}/reviews` | List resort reviews |
@@ -221,7 +221,7 @@ All routes are prefixed with `/<STAGE>/api/v1/guest`.
 curl http://cozi-api.localhost/develop/api/v1/guest/resorts
 
 # Login (payload must be encrypted with COZI_ENCRYPTION_KEY)
-curl -X POST http://cozi-api.localhost/develop/api/v1/guest/login \
+curl -X POST http://cozi-api.localhost/develop/api/v1/guest/auth/login \
   -H "Content-Type: application/json" \
   -d '{"data": "<encrypted-payload>"}'
 

@@ -1,0 +1,62 @@
+from pathlib import Path
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Depends, Request, Form
+from fastapi.responses import HTMLResponse
+from fastapi.security import APIKeyHeader
+from fastapi.templating import Jinja2Templates
+
+from core.services.auto_session import AutoSession
+from domains.guest.auth.login_service import LoginResponseDTO, login
+from domains.guest.auth.logout_service import logout
+from domains.guest.auth.sign_up_service import sign_up
+from domains.guest.auth.verify_guest_service import verify_guest
+from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO
+
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "templates"
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+auth_router = APIRouter(prefix="/auth")
+
+
+@auth_router.post("/sign-up")
+def do_sign_up(encrypted_data: Annotated[EncryptedDataDTO, Body()], session: AutoSession):
+
+    return sign_up(encrypted_data, session)
+
+
+@auth_router.get("/verification", response_class=HTMLResponse)
+def do_get_verification_page(request: Request, d: str):
+
+    return templates.TemplateResponse(
+        "verify_account.html",
+        {
+            "request": request,
+            "token": d,
+        },
+    )
+
+
+@auth_router.post("/verification")
+def do_verify_guest(request: Request, data: Annotated[str, Form()], session: AutoSession):
+
+    verify_guest(EncryptedDataDTO(data=data), session)
+
+    return templates.TemplateResponse(
+        "verified_account.html",
+        {
+            "request": request,
+        },
+    )
+
+
+@auth_router.post("/login")
+def do_login(encrypted_data: Annotated[EncryptedDataDTO, Body()], session: AutoSession) -> LoginResponseDTO:
+
+    return login(encrypted_data, session)
+
+
+@auth_router.post("/logout")
+def do_logout(auth_token: Annotated[str, Depends(APIKeyHeader(name="Authorization"))]):
+
+    return logout(auth_token)

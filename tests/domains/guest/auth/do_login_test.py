@@ -1,7 +1,7 @@
 from domains.guest.enums import GuestErrorMessage
-from tests.domains.guest.do_sign_up_test import do_encrypt_data
+from tests.domains.guest.auth.do_sign_up_test import do_encrypt_data
 
-path = "/test/api/v1/guest/login"
+path = "/test/api/v1/guest/auth/login"
 
 
 def test_do_login(client, guest):
