@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from ulid import ULID
 
 from core.models.guest import Guest
 from core.services.secure_payload_handler import SecurePayloadHandler
@@ -37,6 +38,7 @@ def test_do_sign_up(client, db_session, container_engine):
         user = session.scalars(select(Guest).where(Guest.email_address == "test_email@gmail.com")).one()
 
         assert user.verification.verified_at is None
+        assert len(user.id) == 26 and ULID.from_str(user.id)
 
 
 def test_do_sign_up_email_registered(client, guest):

@@ -1,5 +1,4 @@
 import os
-import random
 from datetime import datetime, timezone, timedelta
 
 import bcrypt
@@ -11,24 +10,12 @@ from core.models.guest import Guest
 from core.models.guest_verification import GuestVerification
 from core.services.secure_payload_handler import SecurePayloadHandler
 from core.services.send_email import SendEmailRequestDTO
+from core.services.user_id_generator import generate_user_id
 from core.tools.celery.tasks.email_task import send_email_task
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO, DecryptedSignUpDataDTO
 from domains.guest.enums import GuestErrorMessage
 
 QUEUE_NAME = os.environ.get("EMAIL_NOTIF_QUEUE", "email_notif_queue_develop")
-
-
-def generate_unique_guest_id(session: Session):
-
-    guest_ids = session.scalars(select(Guest.id)).all()
-
-    while True:
-
-        generated_guest_id = "".join(random.choice("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ") for _ in range(10))
-
-        if generated_guest_id not in guest_ids:
-
-            return generated_guest_id
 
 
 def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
@@ -114,7 +101,7 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
 
     # GENERATE UNIQUE ID
 
-    guest_id = generate_unique_guest_id(session)
+    guest_id = generate_user_id()
 
     # INSERT INTO GUEST TABLE
 

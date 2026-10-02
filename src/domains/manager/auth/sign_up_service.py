@@ -1,5 +1,4 @@
 import os
-import random
 from datetime import datetime, timezone, timedelta
 
 import bcrypt
@@ -9,29 +8,14 @@ from sqlalchemy.orm import Session
 
 from core.models.admin import Admin
 from core.models.manager_verification import ManagerVerification
-from core.models.user import User
 from core.services.secure_payload_handler import SecurePayloadHandler
 from core.services.send_email import SendEmailRequestDTO
+from core.services.user_id_generator import generate_user_id
 from core.tools.celery.tasks.email_task import send_email_task
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO, DecryptedSignUpDataDTO
 from domains.manager.enums import ManagerErrorMessage
 
 QUEUE_NAME = os.environ.get("EMAIL_NOTIF_QUEUE", "email_notif_queue_develop")
-
-
-def generate_unique_manager_id(session: Session):
-
-    # MANAGER IDS LIVE IN THE SHARED USERS TABLE, SO CHECK AGAINST ALL USER IDS.
-
-    user_ids = session.scalars(select(User.id)).all()
-
-    while True:
-
-        generated_manager_id = "".join(random.choice("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ") for _ in range(10))
-
-        if generated_manager_id not in user_ids:
-
-            return generated_manager_id
 
 
 def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
@@ -117,7 +101,7 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
 
     # GENERATE UNIQUE ID
 
-    manager_id = generate_unique_manager_id(session)
+    manager_id = generate_user_id()
 
     # INSERT INTO MANAGER TABLE
 

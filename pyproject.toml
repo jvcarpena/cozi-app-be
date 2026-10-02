@@ -19,6 +19,7 @@ dependencies = [
     "prometheus-fastapi-instrumentator",
     "opentelemetry-sdk",
     "opentelemetry-exporter-prometheus",
+    "python-ulid",
 ]
 
 [project.optional-dependencies]
