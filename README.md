@@ -19,18 +19,19 @@
 
 ## 📖 1. Project Overview
 
-**COZI** is the backend service for a resort booking application. It lets guests sign up, verify their email, browse resorts, read and write reviews, and book stays — while checking availability, guest capacity, and pricing on the server side.
+**COZI** is the backend service for a resort booking application. It lets guests sign up, verify their email, reset a forgotten password, browse resorts, read and write reviews, and book stays — while checking availability, guest capacity, and pricing on the server side. Resort managers (admins) can sign up and log in, with more manager features planned.
 
 ### ✨ Key Features
 
 | Area | Capabilities |
 | --- | --- |
-| 🔐 **Guest authentication** | Sign up, email verification (HTML landing pages), login and logout with token-based auth |
+| 🔐 **Guest authentication** | Sign up, email verification (HTML landing pages), login, logout and forgot/reset password with token-based auth |
+| 🧑‍💼 **Manager authentication** | Sign up, email verification, login and logout for resort managers (admins), with tokens kept separate from guest tokens |
 | 🛡️ **Secure payloads** | Credentials are sent as encrypted payloads (`EncryptedDataDTO`) and decrypted server-side; passwords hashed with `bcrypt` |
 | 🏨 **Resorts** | List resorts, view details (amenities, capacity), read and post reviews |
 | 📅 **Bookings** | Price/availability **preview**, create, history, details, and cancel |
-| ✅ **Business rules** | Availability-conflict detection, guest-capacity validation, price computation, check-out-after-check-in checks |
-| 📨 **Async email** | Verification emails are dispatched through Celery workers over RabbitMQ |
+| ✅ **Business rules** | Booked dates are blocked (and freed on cancel), guest-capacity validation, price computation, check-out-after-check-in checks |
+| 📨 **Async email** | Verification and password reset emails are dispatched through Celery workers over RabbitMQ |
 | 📊 **Observability** | Traces (Tempo), logs (Loki), and metrics (Prometheus) via OpenTelemetry, visualised in Grafana |
 | 🧪 **Tests** | Endpoint-level tests with `pytest` and `testcontainers` (real PostgreSQL / RabbitMQ) |
 
@@ -65,6 +66,7 @@ cozi-app-be/
 │   ├── rabbitmq/                #   Message broker
 │   ├── traefik/                 #   Reverse proxy / gateway
 │   └── grafana/                 #   Grafana, Tempo, Loki, Prometheus, OTel collector
+├── documentations/              # How each feature works (flow diagrams, rules, known limitations)
 ├── env/                         # Per-stage environment files (local, develop, production, test)
 ├── src/
 │   ├── main.py                  # FastAPI app factory, routers, OpenTelemetry setup
@@ -73,10 +75,13 @@ cozi-app-be/
 │   │   ├── services/            #   Auth tokens, sessions, encryption, email, helpers
 │   │   └── tools/               #   Celery, FastAPI (middlewares, handlers), OTel, SQLAlchemy utils
 │   ├── domains/
-│   │   └── guest/               # Guest-facing API
-│   │       ├── router.py        #   /guest routes (sign-up, login, verification, ...)
-│   │       ├── booking/         #   Booking router, services, and rule helpers
-│   │       └── resort/          #   Resort router and services
+│   │   ├── guest/               # Guest-facing API
+│   │   │   ├── router.py        #   Mounts the /guest/auth, /resorts and /bookings routers
+│   │   │   ├── auth/            #   Sign up, verification, login, logout, forgot/reset password
+│   │   │   ├── booking/         #   Booking router, services, and rule helpers
+│   │   │   └── resort/          #   Resort router and services
+│   │   └── manager/             # Manager (admin) API
+│   │       └── auth/            #   Sign up, verification, login, logout
 │   └── templates/               # Jinja2 / email HTML templates
 ├── tests/                       # Mirrors src/domains structure
 ├── alembic.ini
@@ -93,7 +98,11 @@ Client ─▶ Traefik ─▶ FastAPI router ─▶ Service (business rules) ─�
 
 ### 🗃️ Data Model
 
-`User` → `Guest` / `Admin` · `Master` · `Organization` · `Resort` (with `ResortAmenity`, `ResortAvailability`, `ResortReview`) · `Booking` · `Payment` · `GuestVerification`
+`User` → `Guest` / `Admin` (the manager) / `Master` · `Organization` · `Resort` (with `ResortAmenity`, `ResortAvailability`, `ResortReview`) · `Booking` · `Payment` · `GuestVerification` · `GuestPasswordResetRequest` · `ManagerVerification`
+
+All user types share the `users` table (joined-table inheritance on `user_type`). User ids are ULIDs.
+
+> 📚 See [`documentations/`](documentations/) for how each feature works.
 
 ---
 
@@ -129,8 +138,15 @@ Environment files live in `env/` (`local.env`, `develop.env`, `production.env`, 
 | `DB_URL` | SQLAlchemy/psycopg PostgreSQL connection string |
 | `TOKEN_SECRET_KEY` | Secret used to sign auth tokens |
 | `COZI_ENCRYPTION_KEY` | Key used to decrypt/encrypt secure request payloads |
+| `SMTP_USER` | Account used to send emails |
+| `SMTP_PASS` | Password (or app password) of that account |
+| `SMTP_HOST` | *(optional)* SMTP server. Default: `smtp.gmail.com` |
+| `SMTP_PORT` | *(optional)* SMTP port. Default: `587` |
+| `API_BASE_URL` | *(optional)* Base URL used in the password reset email link. Default: `http://cozi-api.localhost` |
 | `RABBITMQ_URL` | *(optional)* Celery broker URL. Default: `amqp://cozi:cozi1234@rabbitmq:5672/` |
 | `EMAIL_NOTIF_QUEUE` | *(optional)* Queue name for email notification tasks |
+
+> ℹ️ `env/` is git-ignored. Emails are sent by the Celery worker, so it needs the same `SMTP_*` values and must be running.
 
 > ⚠️ Never commit real secrets. Use strong, unique values outside of local development, and change the default RabbitMQ credentials in `docker/rabbitmq/compose.yaml`.
 
@@ -193,9 +209,9 @@ pytest --cov=src
 
 ## 💡 5. Usage
 
-All routes are prefixed with `/<STAGE>/api/v1/guest`.
+Guest routes are prefixed with `/<STAGE>/api/v1/guest` and manager routes with `/<STAGE>/api/v1/manager`.
 
-### Endpoint Reference
+### Guest endpoints
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
@@ -204,6 +220,9 @@ All routes are prefixed with `/<STAGE>/api/v1/guest`.
 | `POST` | `/guest/auth/verification` | Confirm verification |
 | `POST` | `/guest/auth/login` | Log in, returns an auth token |
 | `POST` | `/guest/auth/logout` | Log out |
+| `POST` | `/guest/auth/forgot-password` | Email a password reset link (same response whether or not the email exists) |
+| `GET` | `/guest/auth/reset-password?d=<token>` | Password reset page |
+| `POST` | `/guest/auth/reset-password` | Set the new password (form post from that page) |
 | `GET` | `/guest/resorts` | List resorts |
 | `GET` | `/guest/resorts/{resort_id}` | Resort details |
 | `GET` | `/guest/resorts/{resort_id}/reviews` | List resort reviews |
@@ -212,7 +231,19 @@ All routes are prefixed with `/<STAGE>/api/v1/guest`.
 | `POST` | `/guest/bookings` | Create a booking |
 | `GET` | `/guest/bookings` | Booking history |
 | `GET` | `/guest/bookings/{booking_id}` | Booking details |
-| `PUT` | `/guest/bookings/{booking_id}/cancel` | Cancel a booking |
+| `PUT` | `/guest/bookings/{booking_id}/cancel` | Cancel a booking and free its dates |
+
+### Manager endpoints
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/manager/auth/signup` | Register a manager (encrypted payload) |
+| `GET` | `/manager/auth/verify?d=<token>` | Email verification page |
+| `POST` | `/manager/auth/verify` | Confirm verification |
+| `POST` | `/manager/auth/login` | Log in, returns an auth token |
+| `POST` | `/manager/auth/logout` | Log out |
+
+A guest token only works on guest endpoints and a manager token only on manager endpoints.
 
 ### Example
 
@@ -230,7 +261,7 @@ curl http://cozi-api.localhost/develop/api/v1/guest/bookings \
   -H "Authorization: <auth-token>"
 ```
 
-> 📝 The exact request schemas are in the interactive OpenAPI docs at `/<STAGE>/api/v1/docs`.
+> 📝 The exact request schemas are in the interactive OpenAPI docs at `/<STAGE>/api/v1/docs`. For how each feature works, read the pages in [`documentations/`](documentations/): [Guest Auth](documentations/Guest/Auth.md), [Guest Booking](documentations/Guest/Booking.md), [Guest Resort](documentations/Guest/Resort.md) and [Manager Auth](documentations/Manager/Auth.md).
 
 ### 🖼️ Screenshots
 
@@ -244,9 +275,13 @@ curl http://cozi-api.localhost/develop/api/v1/guest/bookings \
 ## 🗺️ 6. Roadmap
 
 - [ ] 💳 Payment gateway integration (the `Payment` model is in place)
-- [ ] 🧑‍💼 Admin / resort-owner API (models for `Admin`, `Organization`, and `Master` exist)
+- [ ] 🧑‍💼 Manager features beyond auth: create and manage a resort, view its bookings
+- [ ] 👑 Master (multi-resort owner) auth and management of its admins
+- [ ] 🔁 Forgot/reset password for managers
 - [ ] 🔍 Resort search, filtering, and pagination
-- [ ] 🔁 Password reset and token refresh
+- [ ] 🔑 Token refresh and revoking tokens after a password reset
+- [ ] ⏳ Expire unpaid `PENDING` bookings so their dates are released
+- [ ] 🔒 Database unique constraint on resort dates to rule out double booking under concurrent requests
 - [ ] 📬 Booking confirmation and cancellation emails
 - [ ] 🚦 Rate limiting and CORS configuration
 - [ ] ⚙️ CI/CD pipeline (lint, tests, image build)
@@ -265,6 +300,7 @@ Contributions are welcome!
    ```
 2. Follow the existing conventions: one service module per endpoint, thin routers, and tests mirroring `src/` under `tests/`.
 3. Format code with **Black** and make sure `pytest` passes.
+   If you change how a feature works, update its page in [`documentations/`](documentations/).
 4. Use [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `chore:`).
 5. Open a **Pull Request** against `develop` describing the change and how it was tested.
 
