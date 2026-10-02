@@ -25,7 +25,7 @@ sequenceDiagram
     else Guests more than max_guests
         A-->>C: 400 NUMBER_OF_GUESTS_EXCEEDS_RESORT_CAPACITY
     end
-    A->>D: Any BOOKED / BLOCKED / MAINTENANCE day in the dates?
+    A->>D: Any BOOKED / BLOCKED / MAINTENANCE row for the booking dates?
     alt Conflict found
         A-->>C: 400 RESORT_IS_NOT_AVAILABLE
     end
@@ -34,9 +34,21 @@ sequenceDiagram
         A-->>C: 200 price details, nothing saved
     else Create (guest token required)
         A->>D: Insert booking with status PENDING
+        A->>D: Insert one BOOKED availability row per booking date
         A-->>C: 200 booking
     end
 ```
+
+The booking and its availability rows are saved in one commit, so a booking never exists without its blocked dates.
+
+### Which dates a booking blocks
+
+| Booking | Dates blocked |
+| --- | --- |
+| Overnight, e.g. check in 10 Jan, check out 12 Jan | 10 Jan and 11 Jan. The check out date stays free, so the next guests can arrive on 12 Jan |
+| Day use (same check in and check out date) | That one date |
+
+The same dates are used for the conflict check and for blocking (`get_booking_dates`).
 
 ## 2. View and cancel
 
@@ -57,11 +69,16 @@ sequenceDiagram
         A-->>C: 404 BOOKING_DOES_NOT_EXIST
     else Details
         A-->>C: Booking with resort info
+    else Cancel, booking already CANCELLED
+        A-->>C: 200, nothing changes
     else Cancel
-        A->>D: Set cancelled_at and cancel_reason
+        A->>D: Set status CANCELLED, cancelled_at and cancel_reason
+        A->>D: Delete the booking's BOOKED availability rows
         A-->>C: 200
     end
 ```
+
+Cancelling frees the dates, so they can be booked again straight away.
 
 ## Pricing
 
@@ -73,7 +90,8 @@ sequenceDiagram
 ## Rules worth knowing
 
 - Send timezone-aware datetimes. They are stored in UTC and most responses show Asia/Manila time.
-- New bookings are `PENDING`. `CONFIRMED`, `COMPLETED`, `CANCELLED` and `EXPIRED` exist but nothing in the guest API sets them yet.
+- New bookings are `PENDING`, and cancelling sets `CANCELLED`. `CONFIRMED`, `COMPLETED` and `EXPIRED` exist but nothing in the guest API sets them yet.
+- A cancelled booking is listed under `status=CANCELLED`, not under `PENDING`.
 - The `payments` table (PayMongo) exists but is not connected to bookings.
 
 ## Where things are
@@ -87,6 +105,5 @@ sequenceDiagram
 
 ## Known limitations
 
-- Creating a booking does **not** write availability rows, so the same dates can be booked twice.
-- Cancelling only sets `cancelled_at`. The status stays `PENDING`, so a cancelled booking still shows in the `PENDING` history, and nothing frees the dates.
-- A day-use booking on a single date never conflicts, because the availability date range is empty.
+- Two requests for the same dates at the same moment can both pass the availability check, because the database has no unique constraint on `(resort_id, date)`. Adding one (with a migration, and turning the resulting error into a `400`) would close this.
+- A `PENDING` booking holds its dates and nothing expires it yet, so unpaid bookings keep the dates blocked until they are cancelled.

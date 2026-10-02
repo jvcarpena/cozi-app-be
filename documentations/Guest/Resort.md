@@ -40,7 +40,7 @@ sequenceDiagram
 ## Rules worth knowing
 
 - The list only shows `ACTIVE` resorts. Details and reviews work for any resort id.
-- Ratings are whole numbers (overall, cleanliness, value). Details returns their averages, or zeros when there are no reviews.
+- Ratings are whole numbers (overall, cleanliness, value). The list returns the average overall rating and details returns all three averages. A resort with no reviews has `0.0` for every rating, in both the list and the details.
 - Amenity categories: `POOL`, `ENTERTAINMENT`, `DINING`, `UTILITIES`.
 - Resort statuses: `ACTIVE`, `INACTIVE`, `MAINTENANCE`. Only `INACTIVE` blocks booking (see [Booking](Booking.md)).
 
@@ -54,7 +54,6 @@ sequenceDiagram
 
 ## Known limitations
 
-- **`GET /resorts` returns `500`** if an active resort has no reviews, because the average divides by zero. Details handles this case, the list does not.
 - The review body carries `resort_id` and that value is used, not the one in the URL.
 - Ratings are not range-checked, and a guest can review the same resort many times, or without having stayed there.
 - The details response leaves out `latitude`, `longitude` and `base_price_per_day_use`.

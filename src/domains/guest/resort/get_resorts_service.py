@@ -43,7 +43,7 @@ def get_resorts(session: Session) -> GetResortsResponseDTO:
                 base_price_per_night=resort.base_price_per_night,
                 currency=resort.currency,
                 address=resort.address,
-                overall_rating=sum(r.overall_rating for r in resort.reviews) / total_review,
+                overall_rating=sum(r.overall_rating for r in resort.reviews) / total_review if total_review else 0.0,
             )
         )
 

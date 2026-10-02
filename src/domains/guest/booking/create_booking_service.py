@@ -8,11 +8,13 @@ from fastapi import Body, HTTPException
 from pydantic import BaseModel, AwareDatetime, model_validator
 
 from core.models.booking import Booking, BookingStatusEnum
+from core.models.resort_availability import ResortAvailability, ResortAvailabilityStatus
 from core.services.auto_session import AutoSession
 from core.services.auto_user import AutoGuestUser
 from domains.guest.booking.services.check_availability_conflict import check_availability_conflict
 from domains.guest.booking.services.compute_booking_price import compute_booking_price
 from domains.guest.booking.services.get_active_resort import get_active_resort
+from domains.guest.booking.services.get_booking_dates import get_booking_dates
 from domains.guest.booking.services.validate_guest_capacity import validate_guest_capacity
 from domains.guest.enums import GuestErrorMessage
 
@@ -86,6 +88,22 @@ def create_booking(context: CreateBookingContext) -> CreateBookingResponseDTO:
             currency=resort.currency,
             special_request=context.request_dto.special_request,
         )
+    )
+
+    # BLOCK THE BOOKED DATES SO NO ONE ELSE CAN BOOK THEM
+
+    context.session.flush()
+
+    context.session.add_all(
+        [
+            ResortAvailability(
+                resort_id=resort.id,
+                booking_id=booking.id,
+                date=booked_date,
+                status=ResortAvailabilityStatus.BOOKED,
+            )
+            for booked_date in get_booking_dates(check_in_date, check_out_date)
+        ]
     )
 
     context.session.commit()
