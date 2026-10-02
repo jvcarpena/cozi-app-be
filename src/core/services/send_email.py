@@ -1,3 +1,4 @@
+import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -9,10 +10,10 @@ from pydantic import BaseModel, EmailStr
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates" / "emails"
 env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
-SMTP_USER = "josevincent727@gmail.com"
-SMTP_PASS = "oajxwwdilkmgxwch"
+SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER")
+SMTP_PASS = os.environ.get("SMTP_PASS")
 
 
 class SendEmailRequestDTO(BaseModel):
@@ -29,6 +30,12 @@ class SendEmailRequestDTO(BaseModel):
 
 
 def send_email(request_dto: SendEmailRequestDTO):
+
+    # SMTP CREDENTIALS COME FROM THE ENVIRONMENT, FAIL CLEARLY IF THEY ARE MISSING
+
+    if not SMTP_USER or not SMTP_PASS:
+
+        raise RuntimeError("SMTP_USER and SMTP_PASS environment variables must be set")
 
     # GET TEMPLATE
 
