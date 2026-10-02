@@ -52,3 +52,8 @@ class DecryptedLoginDataDTO(BaseModel):
     email: EmailStr
 
     password: str
+
+
+class DecryptedPasswordResetDTO(BaseModel):
+
+    email: EmailStr

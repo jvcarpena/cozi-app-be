@@ -5,7 +5,12 @@ import os
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
-from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO, DecryptedSignUpDataDTO, DecryptedLoginDataDTO
+from domains.guest.dtos.sign_up_login_dto import (
+    EncryptedDataDTO,
+    DecryptedSignUpDataDTO,
+    DecryptedLoginDataDTO,
+    DecryptedPasswordResetDTO,
+)
 
 NONCE_SIZE = 12
 TAG_SIZE = 16
@@ -32,7 +37,9 @@ class SecurePayloadHandler:
 
         return EncryptedDataDTO(data=base64.urlsafe_b64encode(combined).decode())
 
-    def decrypt_payload(self, is_sign_up: bool = False) -> DecryptedSignUpDataDTO | DecryptedLoginDataDTO:
+    def decrypt_payload(
+        self, is_sign_up: bool = False, is_password_reset: bool = False
+    ) -> DecryptedSignUpDataDTO | DecryptedLoginDataDTO | DecryptedPasswordResetDTO:
 
         combined = base64.urlsafe_b64decode(self.data_to_decrypt)
 
@@ -50,6 +57,9 @@ class SecurePayloadHandler:
 
         if is_sign_up:
             return DecryptedSignUpDataDTO(**decrypted_data)
+
+        if is_password_reset:
+            return DecryptedPasswordResetDTO(**decrypted_data)
 
         return DecryptedLoginDataDTO(**decrypted_data)
 
@@ -69,6 +79,8 @@ if __name__ == "__main__":
         "password": "jv1234",
     }
 
+    payload_password_reset = {"email": "dawnaianne.laguisma@gmail.com"}
+
     signup_encrypted = SecurePayloadHandler(data_to_encrypt=payload_signup).encrypt_payload()
     print(f"signup_encrypted: {signup_encrypted}")
 
@@ -80,3 +92,11 @@ if __name__ == "__main__":
 
     login_decrypted = SecurePayloadHandler(data_to_decrypt=login_encrypted.data).decrypt_payload()
     print(f"login_decrypted: {login_decrypted}")
+
+    password_reset_encrypted = SecurePayloadHandler(data_to_encrypt=payload_password_reset).encrypt_payload()
+    print(f"password_reset_encrypted: {password_reset_encrypted}")
+
+    password_reset_decrypted = SecurePayloadHandler(data_to_decrypt=password_reset_encrypted.data).decrypt_payload(
+        is_password_reset=True
+    )
+    print(f"password_reset_decrypted: {password_reset_decrypted}")

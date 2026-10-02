@@ -16,3 +16,5 @@ class GuestErrorMessage(StrEnum):
     BOOKING_DOES_NOT_EXIST = "Booing does not exist."
     CHECKOUT_MUST_BE_AFTER_CHECK_IN = "Check out must be after check in"
     NUM_GUEST_MUST_BE_AT_LEAST_1 = "Num guest must be at least 1"
+    PASSWORD_MISMATCH = "New password and confirm password do not match."
+    INVALID_PASSWORD_LENGTH = "Password must be at most 72 characters long."

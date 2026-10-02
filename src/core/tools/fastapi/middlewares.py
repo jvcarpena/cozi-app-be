@@ -20,14 +20,18 @@ from starlette.responses import Response
 
 async def otel_handler(request: Request, call_next: Callable[..., Awaitable[Response]]):
 
+    # THE PASSWORD RESET LINK CARRIES A TOKEN AND THE FORM CARRIES A PLAIN TEXT PASSWORD, NEVER LOG THEM.
+
+    is_sensitive = request.url.path.endswith("/auth/reset-password")
+
     logging.warning(
         TypeAdapter(dict)
         .dump_json(
             {
                 "headers": dict(request.headers),
                 "path_params": request.path_params,
-                "query_params": dict(request.query_params),
-                "body": await request.body(),
+                "query_params": "REDACTED" if is_sensitive else dict(request.query_params),
+                "body": "REDACTED" if is_sensitive else await request.body(),
             },
             indent=4,
         )
