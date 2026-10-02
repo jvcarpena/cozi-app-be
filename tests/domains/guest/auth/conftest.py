@@ -4,7 +4,48 @@ import bcrypt
 import pytest
 
 from core.models.guest import Guest
+from core.models.guest_password_reset_request import GuestPasswordResetRequest
 from core.models.guest_verification import GuestVerification
+
+
+def _create_password_reset_request(db_session, guest, expires_at, consumed_at=None):
+    db_session.add(
+        reset_request := GuestPasswordResetRequest(
+            guest_id=guest.id,
+            expires_at=expires_at,
+            request_consumed_at=consumed_at,
+        )
+    )
+
+    db_session.commit()
+
+    return reset_request
+
+
+@pytest.fixture
+def password_reset_request(db_session, guest):
+    """
+    An active request: not expired and not consumed.
+    """
+
+    yield _create_password_reset_request(db_session, guest, datetime.now(tz=timezone.utc) + timedelta(hours=1))
+
+
+@pytest.fixture
+def expired_password_reset_request(db_session, guest):
+
+    yield _create_password_reset_request(db_session, guest, datetime.now(tz=timezone.utc) - timedelta(minutes=1))
+
+
+@pytest.fixture
+def consumed_password_reset_request(db_session, guest):
+
+    yield _create_password_reset_request(
+        db_session,
+        guest,
+        datetime.now(tz=timezone.utc) + timedelta(hours=1),
+        consumed_at=datetime.now(tz=timezone.utc),
+    )
 
 
 @pytest.fixture
