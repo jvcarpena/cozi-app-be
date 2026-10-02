@@ -141,7 +141,7 @@ sequenceDiagram
     end
 ```
 
-The token is signed with a key derived from `TOKEN_SECRET_KEY` and only holds the request id, so it can never be used as a login token. The database row decides if the link is expired or used, so each link works once.
+The token is signed with a key derived from `TOKEN_SECRET_KEY` and only holds the request id, so it can never be used as a login token, or to reset a manager's password (managers have their own key). The database row decides if the link is expired or used, so each link works once.
 
 ## Data
 

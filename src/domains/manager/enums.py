@@ -9,3 +9,4 @@ class ManagerErrorMessage(StrEnum):
     EMAIL_NOT_EXISTS = "Email does not exists."
     EMAIL_NOT_VERIFIED = "Email does not verified."
     INVALID_CREDENTIALS = "Invalid credentials."
+    PASSWORD_MISMATCH = "New password and confirm password do not match."

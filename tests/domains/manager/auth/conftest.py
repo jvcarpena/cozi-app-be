@@ -4,7 +4,48 @@ import bcrypt
 import pytest
 
 from core.models.admin import Admin
+from core.models.manager_password_reset_request import ManagerPasswordResetRequest
 from core.models.manager_verification import ManagerVerification
+
+
+def _create_password_reset_request(db_session, manager, expires_at, consumed_at=None):
+    db_session.add(
+        reset_request := ManagerPasswordResetRequest(
+            manager_id=manager.id,
+            expires_at=expires_at,
+            request_consumed_at=consumed_at,
+        )
+    )
+
+    db_session.commit()
+
+    return reset_request
+
+
+@pytest.fixture
+def password_reset_request(db_session, manager):
+    """
+    An active request: not expired and not consumed.
+    """
+
+    yield _create_password_reset_request(db_session, manager, datetime.now(tz=timezone.utc) + timedelta(hours=1))
+
+
+@pytest.fixture
+def expired_password_reset_request(db_session, manager):
+
+    yield _create_password_reset_request(db_session, manager, datetime.now(tz=timezone.utc) - timedelta(minutes=1))
+
+
+@pytest.fixture
+def consumed_password_reset_request(db_session, manager):
+
+    yield _create_password_reset_request(
+        db_session,
+        manager,
+        datetime.now(tz=timezone.utc) + timedelta(hours=1),
+        consumed_at=datetime.now(tz=timezone.utc),
+    )
 
 
 @pytest.fixture

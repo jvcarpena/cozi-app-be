@@ -19,14 +19,14 @@
 
 ## 📖 1. Project Overview
 
-**COZI** is the backend service for a resort booking application. It lets guests sign up, verify their email, reset a forgotten password, browse resorts, read and write reviews, and book stays — while checking availability, guest capacity, and pricing on the server side. Resort managers (admins) can sign up and log in, with more manager features planned.
+**COZI** is the backend service for a resort booking application. It lets guests sign up, verify their email, reset a forgotten password, browse resorts, read and write reviews, and book stays — while checking availability, guest capacity, and pricing on the server side. Resort managers (admins) can sign up, log in and reset a forgotten password, with more manager features planned.
 
 ### ✨ Key Features
 
 | Area | Capabilities |
 | --- | --- |
 | 🔐 **Guest authentication** | Sign up, email verification (HTML landing pages), login, logout and forgot/reset password with token-based auth |
-| 🧑‍💼 **Manager authentication** | Sign up, email verification, login and logout for resort managers (admins), with tokens kept separate from guest tokens |
+| 🧑‍💼 **Manager authentication** | Sign up, email verification, login, logout and forgot/reset password for resort managers (admins), with tokens kept separate from guest tokens |
 | 🛡️ **Secure payloads** | Credentials are sent as encrypted payloads (`EncryptedDataDTO`) and decrypted server-side; passwords hashed with `bcrypt` |
 | 🏨 **Resorts** | List resorts, view details (amenities, capacity), read and post reviews |
 | 📅 **Bookings** | Price/availability **preview**, create, history, details, and cancel |
@@ -81,7 +81,7 @@ cozi-app-be/
 │   │   │   ├── booking/         #   Booking router, services, and rule helpers
 │   │   │   └── resort/          #   Resort router and services
 │   │   └── manager/             # Manager (admin) API
-│   │       └── auth/            #   Sign up, verification, login, logout
+│   │       └── auth/            #   Sign up, verification, login, logout, forgot/reset password
 │   └── templates/               # Jinja2 / email HTML templates
 ├── tests/                       # Mirrors src/domains structure
 ├── alembic.ini
@@ -98,7 +98,7 @@ Client ─▶ Traefik ─▶ FastAPI router ─▶ Service (business rules) ─�
 
 ### 🗃️ Data Model
 
-`User` → `Guest` / `Admin` (the manager) / `Master` · `Organization` · `Resort` (with `ResortAmenity`, `ResortAvailability`, `ResortReview`) · `Booking` · `Payment` · `GuestVerification` · `GuestPasswordResetRequest` · `ManagerVerification`
+`User` → `Guest` / `Admin` (the manager) / `Master` · `Organization` · `Resort` (with `ResortAmenity`, `ResortAvailability`, `ResortReview`) · `Booking` · `Payment` · `GuestVerification` · `GuestPasswordResetRequest` · `ManagerVerification` · `ManagerPasswordResetRequest`
 
 All user types share the `users` table (joined-table inheritance on `user_type`). User ids are ULIDs.
 
@@ -242,6 +242,9 @@ Guest routes are prefixed with `/<STAGE>/api/v1/guest` and manager routes with `
 | `POST` | `/manager/auth/verify` | Confirm verification |
 | `POST` | `/manager/auth/login` | Log in, returns an auth token |
 | `POST` | `/manager/auth/logout` | Log out |
+| `POST` | `/manager/auth/forgot-password` | Email a password reset link (same response whether or not the email exists) |
+| `GET` | `/manager/auth/reset-password?d=<token>` | Password reset page |
+| `POST` | `/manager/auth/reset-password` | Set the new password (form post from that page) |
 
 A guest token only works on guest endpoints and a manager token only on manager endpoints.
 
@@ -277,7 +280,6 @@ curl http://cozi-api.localhost/develop/api/v1/guest/bookings \
 - [ ] 💳 Payment gateway integration (the `Payment` model is in place)
 - [ ] 🧑‍💼 Manager features beyond auth: create and manage a resort, view its bookings
 - [ ] 👑 Master (multi-resort owner) auth and management of its admins
-- [ ] 🔁 Forgot/reset password for managers
 - [ ] 🔍 Resort search, filtering, and pagination
 - [ ] 🔑 Token refresh and revoking tokens after a password reset
 - [ ] ⏳ Expire unpaid `PENDING` bookings so their dates are released
