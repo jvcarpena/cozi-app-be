@@ -1,18 +1,18 @@
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy import ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.models.base import AuditMixin, Base
+from core.models import user
 
 
-class Master(Base, AuditMixin):
+class Master(user.User):
 
     __tablename__ = "masters"
 
     __mapper_args__ = {"polymorphic_identity": "master"}
 
-    id: Mapped[Any] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    id = mapped_column(ForeignKey("users.id"), primary_key=True)
 
     project_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"))
 

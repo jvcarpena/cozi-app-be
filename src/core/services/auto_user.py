@@ -1,12 +1,13 @@
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader
 from sqlalchemy import select
 
 from core.models.guest import Guest
+from core.models.admin import Admin
 from core.models.user import User
-from core.services.auth_token_handler import AuthTokenHandler
+from core.services.auth_token_handler import AuthTokenHandler, TokenError
 from core.services.auto_session import AutoSession
 
 
@@ -33,3 +34,17 @@ def get_auto_guest(user: AutoUser):
 
 
 AutoGuestUser = Annotated[Guest, Depends(get_auto_guest)]
+
+
+def get_auto_manager(user: AutoUser):
+
+    # A TOKEN ISSUED TO ANY OTHER USER TYPE (E.G. A GUEST) MUST NOT WORK ON MANAGER ENDPOINTS.
+
+    if not isinstance(user, Admin):
+
+        raise HTTPException(status_code=401, detail=TokenError.INVALID_SESSION.name)
+
+    return user
+
+
+AutoManagerUser = Annotated[Admin, Depends(get_auto_manager)]

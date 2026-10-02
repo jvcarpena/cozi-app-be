@@ -32,8 +32,8 @@ def auto_tag_routes(app: FastAPI):
             "name": "Guest",
             "tags": trie.keys("/guest"),
         },
-        # {
-        #     "name": "Manager",
-        #     "tags": trie.keys("/manager"),
-        # },
+        {
+            "name": "Manager",
+            "tags": trie.keys("/manager"),
+        },
     ]

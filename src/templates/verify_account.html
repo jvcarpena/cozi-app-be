@@ -36,7 +36,7 @@
               </p>
 
               <!-- POST form — submits token to the API -->
-              <form method="POST" action="/guest/verification">
+              <form method="POST" action="{{ verify_url | default('/guest/verification') }}">
                 <input type="hidden" name="data" value="{{ token }}" />
                 <button
                   type="submit"

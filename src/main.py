@@ -43,6 +43,7 @@ from core.tools.fastapi.exception_handlers import exception_handlers
 from core.tools.fastapi.middlewares import middlewares
 from core.tools.opentelemetry.logging_handler import CustomLoggingHandler
 from domains.guest.router import guest_router
+from domains.manager.router import manager_router
 
 
 class CustomFastApi(FastAPI):
@@ -86,6 +87,7 @@ app = CustomFastApi(
 
 # ROUTERS
 app.include_router(guest_router)
+app.include_router(manager_router)
 
 resource = Resource.create(attributes={"service.name": "cozi-develop"})
 
