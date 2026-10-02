@@ -9,13 +9,13 @@ from sqlalchemy import select, and_
 
 from core.models.booking import BookingStatusEnum, Booking
 from core.services.auto_session import AutoSession
-from core.services.auto_user import AutoUser
+from core.services.auto_user import AutoGuestUser
 from domains.guest.enums import GuestErrorMessage
 
 
 @dataclass
 class BookingDetailsContext:
-    user: AutoUser
+    user: AutoGuestUser
     session: AutoSession
     booking_id: Annotated[int, Path(...)]
 

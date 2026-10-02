@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from core.models.booking import BookingStatusEnum, Booking
 from core.services.auto_session import AutoSession
-from core.services.auto_user import AutoUser
+from core.services.auto_user import AutoGuestUser
 
 
 class BookingHistoryRequestDTO(BaseModel):
@@ -19,7 +19,7 @@ class BookingHistoryRequestDTO(BaseModel):
 
 @dataclass
 class BookingHistoryContext:
-    user: AutoUser
+    user: AutoGuestUser
     session: AutoSession
     request_dto: Annotated[BookingHistoryRequestDTO, Query()]
 

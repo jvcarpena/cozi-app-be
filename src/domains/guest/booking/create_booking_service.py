@@ -9,7 +9,7 @@ from pydantic import BaseModel, AwareDatetime, model_validator
 
 from core.models.booking import Booking, BookingStatusEnum
 from core.services.auto_session import AutoSession
-from core.services.auto_user import AutoUser
+from core.services.auto_user import AutoGuestUser
 from domains.guest.booking.services.check_availability_conflict import check_availability_conflict
 from domains.guest.booking.services.compute_booking_price import compute_booking_price
 from domains.guest.booking.services.get_active_resort import get_active_resort
@@ -35,7 +35,7 @@ class CreateBookingRequestDTO(BaseModel):
 
 @dataclass
 class CreateBookingContext:
-    user: AutoUser
+    user: AutoGuestUser
     session: AutoSession
     request_dto: Annotated[CreateBookingRequestDTO, Body()]
 

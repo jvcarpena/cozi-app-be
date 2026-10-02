@@ -28,7 +28,11 @@ AutoUser = Annotated[User, Depends(get_auto_user)]
 
 def get_auto_guest(user: AutoUser):
 
-    assert isinstance(user, Guest)
+    # A TOKEN ISSUED TO ANY OTHER USER TYPE (E.G. AN ADMIN) MUST NOT WORK ON GUEST ENDPOINTS.
+
+    if not isinstance(user, Guest):
+
+        raise HTTPException(status_code=401, detail=TokenError.INVALID_SESSION.name)
 
     return user
 
