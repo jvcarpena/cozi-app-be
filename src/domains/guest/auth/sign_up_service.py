@@ -12,7 +12,11 @@ from core.services.secure_payload_handler import SecurePayloadHandler
 from core.services.send_email import SendEmailRequestDTO
 from core.services.user_id_generator import generate_user_id
 from core.tools.celery.tasks.email_task import send_email_task
-from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO, DecryptedSignUpDataDTO
+from domains.guest.dtos.sign_up_login_dto import (
+    EncryptedDataDTO,
+    DecryptedSignUpDataDTO,
+    validate_password_length,
+)
 from domains.guest.enums import GuestErrorMessage
 
 QUEUE_NAME = os.environ.get("EMAIL_NOTIF_QUEUE", "email_notif_queue_develop")
@@ -25,6 +29,10 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
     decrypted_user_data: DecryptedSignUpDataDTO = SecurePayloadHandler(
         data_to_decrypt=encrypted_data.data
     ).decrypt_payload(is_sign_up=True)
+
+    # CHECK THE PASSWORD LENGTH
+
+    validate_password_length(decrypted_user_data.password)
 
     # GET EXISTING USER FROM THE DB
 

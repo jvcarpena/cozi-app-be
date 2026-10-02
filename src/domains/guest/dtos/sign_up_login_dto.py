@@ -20,6 +20,21 @@ def validate_name_characters(name: str) -> str:
     return name
 
 
+MIN_PASSWORD_LENGTH = 6
+
+# BCRYPT ONLY USES THE FIRST 72 BYTES OF A PASSWORD, THE NEWER VERSIONS REJECT ANYTHING LONGER.
+MAX_PASSWORD_BYTES = 72
+
+
+def validate_password_length(password: str) -> str:
+
+    if len(password) < MIN_PASSWORD_LENGTH or len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+
+        raise HTTPException(status_code=400, detail=GuestErrorMessage.INVALID_PASSWORD_LENGTH.name)
+
+    return password
+
+
 def check_if_empty_str(value: str):
 
     if value == "":

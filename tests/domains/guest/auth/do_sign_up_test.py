@@ -122,3 +122,24 @@ def test_do_sign_up_invalid_name(client):
 
     assert response.status_code == 400
     assert response_body["detail"] == GuestErrorMessage.INVALID_NAME.name
+
+
+def test_do_sign_up_password_too_short(client):
+    encrypted_data = do_encrypt_data(
+        {
+            "email": "short_password@gmail.com",
+            "first_name": "short",
+            "last_name": "password",
+            "password": "12345",
+            "phone": "",
+        }
+    )
+
+    response = client.post(
+        path,
+        json={"data": encrypted_data},
+    )
+    response_body = response.json()
+
+    assert response.status_code == 400
+    assert response_body["detail"] == GuestErrorMessage.INVALID_PASSWORD_LENGTH.name

@@ -6,11 +6,8 @@ from sqlalchemy.orm import Session
 
 from core.models.guest import Guest
 from domains.guest.auth.get_active_password_reset_request import get_active_password_reset_request
+from domains.guest.dtos.sign_up_login_dto import validate_password_length
 from domains.guest.enums import GuestErrorMessage
-
-# BCRYPT ONLY USES THE FIRST 72 BYTES OF A PASSWORD, THE NEWER VERSIONS REJECT ANYTHING LONGER.
-MAX_PASSWORD_BYTES = 72
-
 
 def reset_password(token: str, new_password: str, confirm_password: str, session: Session):
 
@@ -20,11 +17,9 @@ def reset_password(token: str, new_password: str, confirm_password: str, session
 
         raise HTTPException(status_code=400, detail=GuestErrorMessage.PASSWORD_MISMATCH.name)
 
-    # CHECK THE PASSWORD IS NOT TOO LONG
+    # CHECK THE PASSWORD LENGTH
 
-    if len(new_password.encode("utf-8")) > MAX_PASSWORD_BYTES:
-
-        raise HTTPException(status_code=400, detail=GuestErrorMessage.INVALID_PASSWORD_LENGTH.name)
+    validate_password_length(new_password)
 
     # GET THE REQUEST THE TOKEN WAS ISSUED FOR, IT MUST NOT BE EXPIRED OR CONSUMED.
     # THE ROW IS LOCKED SO TWO SIMULTANEOUS SUBMISSIONS CANNOT BOTH USE THE SAME LINK.

@@ -5,6 +5,7 @@ from ulid import ULID
 
 from core.models.admin import Admin
 from core.services.secure_payload_handler import SecurePayloadHandler
+from domains.guest.enums import GuestErrorMessage
 from domains.manager.enums import ManagerErrorMessage
 
 path = "/test/api/v1/manager/auth/signup"
@@ -88,3 +89,24 @@ def test_do_sign_up_unverified_manager_expired_link(client, unverified_manager_e
     response = client.post(path, json={"data": encrypted_data})
 
     assert response.status_code == 200
+
+
+def test_do_sign_up_password_too_short(client):
+    encrypted_data = do_encrypt_data(
+        {
+            "email": "short_password@gmail.com",
+            "first_name": "short",
+            "last_name": "password",
+            "password": "12345",
+            "phone": "",
+        }
+    )
+
+    response = client.post(
+        path,
+        json={"data": encrypted_data},
+    )
+    response_body = response.json()
+
+    assert response.status_code == 400
+    assert response_body["detail"] == GuestErrorMessage.INVALID_PASSWORD_LENGTH.name
