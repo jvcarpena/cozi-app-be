@@ -6,7 +6,7 @@ The important design choices in COZI: what the options were, what was chosen, wh
 
 ## Contents
 
-1. [Manager is an admin, master is a separate user type](#1-manager-is-an-admin-master-is-a-separate-user-type)
+1. [Everyone who signs up as a manager is a master, admins are invited](#1-everyone-who-signs-up-as-a-manager-is-a-master-admins-are-invited)
 2. [One users table with joined-table inheritance](#2-one-users-table-with-joined-table-inheritance)
 3. [Credentials travel as encrypted payloads](#3-credentials-travel-as-encrypted-payloads)
 4. [Stateless JWT, one token type per user type](#4-stateless-jwt-one-token-type-per-user-type)
@@ -21,22 +21,36 @@ The important design choices in COZI: what the options were, what was chosen, wh
 
 ---
 
-## 1. Manager is an admin, master is a separate user type
+## 1. Everyone who signs up as a manager is a master, admins are invited
 
-**Problem.** Resort owners need accounts. Some own one resort, some own several.
+**Problem.** Resort owners need accounts. Some own one resort, some own several (in Pansol, Calamba, owners of several resorts put an admin in each). Someone has to manage each resort day to day.
 
 **Options**
-- A new `Manager` user type next to `Admin` and `Master` (the first version built).
-- The manager *is* the existing `Admin`: one person who owns or manages **one resort**. A `Master` owns **several** resorts and has an admin in each.
+1. A separate `Manager` user type next to `Admin` and `Master` (the first version built).
+2. Ask at sign up "how many resorts do you own?" and create an admin for one, or a master for more than one.
+3. **Everyone who signs up is a master.** A master creates resorts and invites an admin for each one if they want to delegate (chosen).
 
-**Chosen.** The manager is the `Admin`. The API says `manager`, the code says `Admin`.
+**Chosen.** Option 3. A master owns an organization. A resort belongs to one master (through the organization) and has zero or one admin. A master can do everything an admin can. An admin only sees the resort they manage and never signs up: a master invites them.
 
-**Why.** It matches the business: one resort per admin, many per master. A separate `Manager` type would have duplicated `Admin` and left two types meaning the same thing.
+**Why**
+- There is one sign-up path. A solo owner and an owner of three resorts use the same screen.
+- Option 2 would need a way to upgrade an admin to a master when an owner opens a second resort. The two types are separate tables, so that is hard. With option 3 nobody upgrades.
+- It also left the admins that a master hires with no way to get an account, because they don't own resorts. Invites solve that.
+- The permissions form a simple hierarchy, and the same endpoints can serve both roles, scoped by resort.
+- A resort does not need an admin: the master can run it alone until they delegate.
+
+**The sign-up question.** One required field, `organization_name`. A manager with several resorts enters the organization name, a manager with one resort enters the resort name. The server treats both the same, so the different wording is only in the client.
 
 **Trade-offs**
-- `admins.resort_id` and `organization_id` are empty after sign up, until the admin adds a resort. They are nullable.
-- No foreign keys on those columns yet, and `Master` has no endpoints, so the master/admin relationship is not enforced anywhere.
-- The code and API use different words for the same person.
+- A person who manages two resorts for a master needs two accounts, because an admin has exactly one resort.
+- A solo owner still has an organization. It is hidden behind the one field.
+- An admin that hasn't opened the invite link has no password, so login must handle a missing password.
+- No foreign key stopped an admin from being linked to a resort of another master, so that rule is checked in the code that scopes resources (a later step).
+
+**Decided, built in later steps**
+- *Inviting an admin.* The master enters the admin's email and details. The admin gets a link to set a password, using the password reset flow. Using the link also marks the email verified. The master never sees the password.
+- *Removing an admin.* Set `deleted_at`, rename them `DELETED ADMIN`, and also clear their email, phone, password and resort, and mark any open links as used. Clearing the email frees it for a new invite, clearing the resort frees the resort for a new admin, and nothing reads `deleted_at` on its own, so login and the token check refuse a removed user explicitly.
+- *Prices.* Only the master edits base prices and calendar price overrides. Everything else is open to both roles.
 
 ## 2. One users table with joined-table inheritance
 
@@ -53,6 +67,7 @@ The important design choices in COZI: what the options were, what was chosen, wh
 **Trade-offs**
 - Every load joins two tables.
 - A subclass must really extend `User`. `Admin` and `Master` originally did not, so their `user_type` values had no mapper and loading them would have failed.
+- Rows that both roles need (`manager_verifications`, `manager_password_reset_requests`) point at the shared `users.id`, not at one role's table.
 - All types share one id space, which is one reason ids need to be globally unique (see 8).
 
 ## 3. Credentials travel as encrypted payloads
@@ -66,7 +81,7 @@ The important design choices in COZI: what the options were, what was chosen, wh
 **Trade-offs**
 - The key must live in the client too, so this is obfuscation on top of TLS, not a replacement for it.
 - Key rotation is not designed.
-- A malformed payload makes decryption raise, which returns `500` instead of `400`.
+- A payload that cannot be decrypted returns `400 INVALID_PAYLOAD`, and one with missing or invalid fields returns `422 INVALID_PAYLOAD`. Both used to be a `500`.
 - The password reset page is the one exception (see 6).
 
 ## 4. Stateless JWT, one token type per user type
@@ -79,6 +94,7 @@ The important design choices in COZI: what the options were, what was chosen, wh
 
 **Trade-offs**
 - Tokens cannot be revoked. They stay valid for 7 days, even after a password reset.
+- The one exception is a removed user. The token check looks at `deleted_at`, so a removed user is refused even with a token that has not expired.
 - Fix when needed: a `password_changed_at` check, or a token version, plus refresh tokens.
 
 ## 5. Password reset: signed link plus a request table

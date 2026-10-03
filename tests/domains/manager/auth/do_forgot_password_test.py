@@ -175,3 +175,51 @@ def test_do_forgot_password_response_is_the_same_for_every_case(
 
     assert {response.status_code for response in responses} == {200}
     assert len({response.text for response in responses}) == 1
+
+
+def test_do_forgot_password_admin(client, container_engine, admin, send_email_task_mock):
+
+    response = do_forgot_password(client, admin.email_address)
+
+    assert response.status_code == 200
+    assert response.json() == {"message": GENERIC_MESSAGE}
+
+    assert len(get_reset_requests(container_engine, admin.id)) == 1
+
+    send_email_task_mock.delay.assert_called_once()
+
+    assert send_email_task_mock.delay.call_args.args[0]["to"] == admin.email_address
+
+
+def test_do_forgot_password_invited_admin_not_verified(client, container_engine, invited_admin, send_email_task_mock):
+
+    response = do_forgot_password(client, invited_admin.email_address)
+
+    assert response.status_code == 200
+    assert response.json() == {"message": GENERIC_MESSAGE}
+
+    assert get_reset_requests(container_engine, invited_admin.id) == []
+
+    send_email_task_mock.delay.assert_not_called()
+
+
+def test_do_forgot_password_removed_admin(client, container_engine, deleted_admin, send_email_task_mock):
+
+    response = do_forgot_password(client, deleted_admin.email_address)
+
+    assert response.status_code == 200
+    assert response.json() == {"message": GENERIC_MESSAGE}
+
+    assert get_reset_requests(container_engine, deleted_admin.id) == []
+
+    send_email_task_mock.delay.assert_not_called()
+
+
+def test_do_forgot_password_invalid_email(client, send_email_task_mock):
+
+    response = client.post(path, json={"data": do_encrypt_data({"email": "not-an-email"})})
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "INVALID_PAYLOAD"
+
+    send_email_task_mock.delay.assert_not_called()

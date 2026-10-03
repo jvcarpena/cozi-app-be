@@ -163,7 +163,7 @@ Env vars: `STAGE`, `DB_URL`, `TOKEN_SECRET_KEY`, `COZI_ENCRYPTION_KEY`, `SMTP_*`
 
 ## Known limitations
 
-- A malformed encrypted payload returns `500` instead of `400`.
+- A payload that cannot be decrypted returns `400 INVALID_PAYLOAD`, and one with missing or invalid fields returns `422 INVALID_PAYLOAD`.
 - Login and sign up reveal whether an email is registered. Only forgot password hides it.
 - Login tokens are not revoked after a password reset.
 - `otel_handler` redacts the query and body of `/auth/reset-password`, so the token and password are not logged. Serve that page over HTTPS in production.

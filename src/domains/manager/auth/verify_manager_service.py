@@ -4,9 +4,10 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from core.models.admin import Admin
+from core.models.master import Master
 from core.services.secure_payload_handler import SecurePayloadHandler
-from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO, DecryptedSignUpDataDTO
+from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO
+from domains.manager.dtos.sign_up_dto import DecryptedManagerSignUpDataDTO
 from domains.manager.enums import ManagerErrorMessage
 
 
@@ -14,15 +15,16 @@ def verify_manager(encrypted_data: EncryptedDataDTO, session: Session):
 
     # DECRYPT DATA
 
-    decrypted_user_data: DecryptedSignUpDataDTO = SecurePayloadHandler(
+    decrypted_user_data: DecryptedManagerSignUpDataDTO = SecurePayloadHandler(
         data_to_decrypt=encrypted_data.data
-    ).decrypt_payload(is_sign_up=True)
+    ).decrypt_payload(is_manager_sign_up=True)
 
     # GET THE MANAGER FROM THE DB AND CHECK IF THE MANAGER EXISTS
 
     manager = session.scalars(
-        select(Admin).where(
-            Admin.email_address == decrypted_user_data.email,
+        select(Master).where(
+            Master.email_address == decrypted_user_data.email,
+            Master.deleted_at.is_(None),
         )
     ).one_or_none()
 

@@ -5,13 +5,13 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from core.models.admin import Admin
 from core.models.manager_password_reset_request import ManagerPasswordResetRequest
 from core.services.password_reset_token_handler import MANAGER_PURPOSE, PasswordResetTokenHandler
 from core.services.secure_payload_handler import SecurePayloadHandler
 from core.services.send_email import SendEmailRequestDTO
 from core.tools.celery.tasks.email_task import send_email_task
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO, DecryptedPasswordResetDTO
+from domains.manager.auth.get_manager_by_email import get_manager_by_email
 
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://cozi-api.localhost")
 
@@ -36,11 +36,11 @@ def initiate_password_reset(encrypted_data: EncryptedDataDTO, session: Session):
         data_to_decrypt=encrypted_data.data
     ).decrypt_payload(is_password_reset=True)
 
-    manager = session.scalars(select(Admin).where(Admin.email_address == decrypted_data.email)).one_or_none()
+    manager = get_manager_by_email(session, decrypted_data.email)
 
     # CHECK IF THE MANAGER EXISTS AND IS VERIFIED
 
-    if not manager or manager.verification.verified_at is None:
+    if not manager or manager.verification is None or manager.verification.verified_at is None:
 
         return response
 

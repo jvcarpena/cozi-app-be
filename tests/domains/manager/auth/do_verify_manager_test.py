@@ -12,7 +12,7 @@ def test_get_verification_page(client):
     assert 'action="/manager/auth/verify"' in response.text
 
 
-def test_verify_manager(client, unverified_manager):
+def test_verify_manager(client, db_session, unverified_manager):
     encrypted_data = do_encrypt_data(
         {
             "email": unverified_manager.email_address,
@@ -20,6 +20,7 @@ def test_verify_manager(client, unverified_manager):
             "last_name": unverified_manager.last_name,
             "password": "unverified1234",
             "phone": "",
+            "organization_name": "TEST_ORGANIZATION",
         }
     )
 
@@ -28,6 +29,10 @@ def test_verify_manager(client, unverified_manager):
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "<title>Account Verified - Cozi</title>" in response.text
+
+    db_session.expire_all()
+
+    assert unverified_manager.verification.verified_at is not None
 
 
 def test_verify_manager_not_exist(client):
@@ -38,6 +43,7 @@ def test_verify_manager_not_exist(client):
             "last_name": "NotExist",
             "password": "NotExist1234",
             "phone": "",
+            "organization_name": "TEST_ORGANIZATION",
         }
     )
 
@@ -55,6 +61,7 @@ def test_verify_manager_link_expired(client, unverified_manager_expired_link):
             "last_name": unverified_manager_expired_link.last_name,
             "password": "linkexpired1234",
             "phone": "",
+            "organization_name": "TEST_ORGANIZATION",
         }
     )
 
@@ -62,3 +69,25 @@ def test_verify_manager_link_expired(client, unverified_manager_expired_link):
 
     assert response.status_code == 400
     assert response.json()["detail"] == ManagerErrorMessage.LINK_EXPIRED.name
+
+
+def test_verify_manager_link_of_an_admin(client, admin):
+    """
+    An admin does not verify through the master sign up link, they verify by setting a password.
+    """
+
+    encrypted_data = do_encrypt_data(
+        {
+            "email": admin.email_address,
+            "first_name": admin.first_name,
+            "last_name": admin.last_name,
+            "password": "admin1234",
+            "phone": "",
+            "organization_name": "TEST_ORGANIZATION",
+        }
+    )
+
+    response = client.post(path, data={"data": encrypted_data})
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == ManagerErrorMessage.ACCOUNT_DOES_NOT_EXISTS.name

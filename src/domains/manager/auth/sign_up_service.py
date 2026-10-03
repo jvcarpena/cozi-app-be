@@ -3,51 +3,50 @@ from datetime import datetime, timezone, timedelta
 
 import bcrypt
 from fastapi import HTTPException
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from core.models.admin import Admin
 from core.models.manager_verification import ManagerVerification
+from core.models.master import Master
+from core.models.organization import Organization
 from core.services.secure_payload_handler import SecurePayloadHandler
 from core.services.send_email import SendEmailRequestDTO
 from core.services.user_id_generator import generate_user_id
 from core.tools.celery.tasks.email_task import send_email_task
-from domains.guest.dtos.sign_up_login_dto import (
-    EncryptedDataDTO,
-    DecryptedSignUpDataDTO,
-    validate_password_length,
-)
+from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO, validate_password_length
+from domains.manager.auth.get_manager_by_email import get_manager_by_email
+from domains.manager.dtos.sign_up_dto import DecryptedManagerSignUpDataDTO
 from domains.manager.enums import ManagerErrorMessage
 
 QUEUE_NAME = os.environ.get("EMAIL_NOTIF_QUEUE", "email_notif_queue_develop")
 
 
 def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
+    """
+    Everyone who signs up as a manager becomes a master, whether they own one resort or many. Admins are never
+    created here: a master invites them to a resort.
+    """
 
     # DECRYPT DATA
 
-    decrypted_user_data: DecryptedSignUpDataDTO = SecurePayloadHandler(
+    decrypted_user_data: DecryptedManagerSignUpDataDTO = SecurePayloadHandler(
         data_to_decrypt=encrypted_data.data
-    ).decrypt_payload(is_sign_up=True)
+    ).decrypt_payload(is_manager_sign_up=True)
 
     # CHECK THE PASSWORD LENGTH
 
     validate_password_length(decrypted_user_data.password)
 
-    # GET EXISTING USER FROM THE DB
+    # GET EXISTING MANAGER FROM THE DB. AN EMAIL CANNOT BE BOTH A MASTER AND AN ADMIN, SO LOOK AT BOTH TYPES.
 
-    existing_user = session.scalars(
-        select(Admin).where(
-            Admin.email_address == decrypted_user_data.email,
-        )
-    ).one_or_none()
+    existing_user = get_manager_by_email(session, decrypted_user_data.email)
 
     # CHECK IF THE MANAGER IS ALREADY VERIFIED
 
     if existing_user:
 
+        # AN EMAIL THAT BELONGS TO AN ADMIN (INVITED BY A MASTER) CANNOT BE USED TO SIGN UP.
         # IF VERIFIED, RAISE EMAIL REGISTERED ERROR
-        if existing_user.verification.verified_at:
+        if not isinstance(existing_user, Master) or existing_user.verification.verified_at:
 
             raise HTTPException(status_code=400, detail=ManagerErrorMessage.EMAIL_REGISTERED.name)
 
@@ -78,6 +77,8 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
 
                 existing_user.phone_number = decrypted_user_data.phone
 
+                existing_user.organization.name = decrypted_user_data.organization_name
+
                 existing_user.hashed_password = bcrypt.hashpw(
                     decrypted_user_data.password.encode("utf-8"), bcrypt.gensalt()
                 )
@@ -107,31 +108,25 @@ def sign_up(encrypted_data: EncryptedDataDTO, session: Session):
         ).model_dump()
     )
 
-    # GENERATE UNIQUE ID
+    # INSERT INTO ORGANIZATION, MASTER AND MANAGER VERIFICATION TABLES IN ONE TRANSACTION.
+    # THE ORGANIZATION IS THE BUSINESS THAT OWNS THE RESORTS OF THE MASTER.
 
-    manager_id = generate_user_id()
-
-    # INSERT INTO MANAGER TABLE
-
-    session.add(
-        new_manager := Admin(
-            id=manager_id,
-            email_address=decrypted_user_data.email,
-            first_name=decrypted_user_data.first_name,
-            last_name=decrypted_user_data.last_name,
-            hashed_password=bcrypt.hashpw(decrypted_user_data.password.encode("utf-8"), bcrypt.gensalt()),
-            phone_number=decrypted_user_data.phone,
-        )
+    new_master = Master(
+        id=generate_user_id(),
+        email_address=decrypted_user_data.email,
+        first_name=decrypted_user_data.first_name,
+        last_name=decrypted_user_data.last_name,
+        hashed_password=bcrypt.hashpw(decrypted_user_data.password.encode("utf-8"), bcrypt.gensalt()),
+        phone_number=decrypted_user_data.phone,
+        organization=Organization(name=decrypted_user_data.organization_name),
     )
 
-    # INSERT INTO MANAGER VERIFICATION TABLE
-
-    session.add(
-        ManagerVerification(
-            manager_id=new_manager.id,
-            latest_email_sent_at=datetime.now(tz=timezone.utc),
-        )
+    new_master.verification = ManagerVerification(
+        manager_id=new_master.id,
+        latest_email_sent_at=datetime.now(tz=timezone.utc),
     )
+
+    session.add(new_master)
 
     session.commit()
 

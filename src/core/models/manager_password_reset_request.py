@@ -14,9 +14,9 @@ class ManagerPasswordResetRequest(Base, AuditMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    # THE MANAGER IS AN ADMIN (ONE RESORT), SO THIS POINTS TO THE ADMINS TABLE.
+    # MASTERS AND ADMINS CAN BOTH RESET A PASSWORD, SO THIS POINTS TO THE SHARED USERS TABLE.
 
-    manager_id: Mapped[str] = mapped_column(ForeignKey("admins.id"), index=True)
+    manager_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
 
     expires_at: Mapped[datetime] = mapped_column(UTCDateTime)
 

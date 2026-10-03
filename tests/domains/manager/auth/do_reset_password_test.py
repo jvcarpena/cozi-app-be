@@ -301,3 +301,72 @@ def test_do_reset_password_missing_fields(client, password_reset_request):
     response = client.post(path, data={"token": build_reset_token(password_reset_request)})
 
     assert response.status_code == 422
+
+
+def create_reset_request(db_session, manager) -> ManagerPasswordResetRequest:
+
+    db_session.add(
+        reset_request := ManagerPasswordResetRequest(
+            manager_id=manager.id, expires_at=datetime.now(tz=timezone.utc) + timedelta(hours=1)
+        )
+    )
+
+    db_session.commit()
+
+    return reset_request
+
+
+def test_do_reset_password_admin(client, db_session, admin):
+    reset_request = create_reset_request(db_session, admin)
+
+    response = do_reset_password(client, build_reset_token(reset_request))
+
+    assert response.status_code == 200
+
+    db_session.expire_all()
+
+    assert is_password(admin, NEW_PASSWORD)
+    assert reset_request.request_consumed_at is not None
+
+
+def test_do_reset_password_invited_admin_sets_a_password_and_is_verified(client, db_session, invited_admin):
+    """
+    This is how an admin a master invited gets started: the link sets the password and proves the email.
+    """
+
+    reset_request = create_reset_request(db_session, invited_admin)
+
+    response = do_reset_password(client, build_reset_token(reset_request))
+
+    assert response.status_code == 200
+
+    db_session.expire_all()
+
+    assert invited_admin.verification.verified_at is not None
+
+    login_response = client.post(
+        "/test/api/v1/manager/auth/login",
+        json={"data": do_encrypt_data({"email": invited_admin.email_address, "password": NEW_PASSWORD})},
+    )
+
+    assert login_response.status_code == 200
+    assert login_response.json()["role"] == "admin"
+    assert login_response.json()["resort_id"] == invited_admin.resort_id
+
+
+def test_do_reset_password_removed_admin(client, db_session, deleted_admin):
+    """
+    A link that was sent before the admin was removed must not bring the account back.
+    """
+
+    reset_request = create_reset_request(db_session, deleted_admin)
+
+    response = do_reset_password(client, build_reset_token(reset_request))
+
+    assert response.status_code == 400
+    assert LINK_EXPIRED_TITLE in response.text
+
+    db_session.expire_all()
+
+    assert is_password(deleted_admin, "deleted1234")
+    assert reset_request.request_consumed_at is None

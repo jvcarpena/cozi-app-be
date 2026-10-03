@@ -2,7 +2,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Optional, List
 
-from sqlalchemy import String, Text, Numeric
+from sqlalchemy import ForeignKey, String, Text, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.models import resort_amenity, resort_review
@@ -24,7 +24,7 @@ class Resort(Base, AuditMixin):
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
 
-    organization_id: Mapped[int] = mapped_column()
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"))
 
     name: Mapped[str] = mapped_column(String(256))
 

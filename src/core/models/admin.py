@@ -9,6 +9,9 @@ from core.models import manager_verification
 
 
 class Admin(user.User):
+    """
+    The person a master puts in charge of ONE resort. An admin is never created by signing up, a master invites them.
+    """
 
     __tablename__ = "admins"
 
@@ -22,12 +25,10 @@ class Admin(user.User):
 
     phone_number: Mapped[Optional[str]] = mapped_column(String(50))
 
-    # AN ADMIN OWNS A SINGLE RESORT (OR MANAGES ONE FOR A MASTER). THESE ARE NULL AFTER SIGN-UP
-    # AND ARE SET ONCE THE ADMIN ADDS THEIR RESORT.
+    # A RESORT HAS AT MOST ONE ADMIN. THIS IS NULL FOR AN ADMIN THAT WAS REMOVED FROM THEIR RESORT.
+    # THE ORGANIZATION OF THE ADMIN IS THE ORGANIZATION OF THEIR RESORT.
 
-    organization_id: Mapped[Optional[int]] = mapped_column()
-
-    resort_id: Mapped[Optional[int]] = mapped_column()
+    resort_id: Mapped[Optional[int]] = mapped_column(ForeignKey("resorts.id"), unique=True)
 
     profile_picture: Mapped[Optional[str]] = mapped_column(String(256))
 
@@ -37,6 +38,4 @@ class Admin(user.User):
 
     # RELATIONSHIP
 
-    verification: Mapped["manager_verification.ManagerVerification"] = relationship(
-        back_populates="manager", uselist=False, cascade="all, delete-orphan"
-    )
+    verification: Mapped["manager_verification.ManagerVerification"] = relationship(uselist=False, cascade="all")
