@@ -264,7 +264,7 @@ curl http://cozi-api.localhost/develop/api/v1/guest/bookings \
   -H "Authorization: <auth-token>"
 ```
 
-> 📝 The exact request schemas are in the interactive OpenAPI docs at `/<STAGE>/api/v1/docs`. For how each feature works, read the pages in [`documentations/`](documentations/): [Guest Auth](documentations/Guest/Auth.md), [Guest Booking](documentations/Guest/Booking.md), [Guest Resort](documentations/Guest/Resort.md) and [Manager Auth](documentations/Manager/Auth.md).
+> 📝 The exact request schemas are in the interactive OpenAPI docs at `/<STAGE>/api/v1/docs`. For how each feature works, read the pages in [`documentations/`](documentations/): [Guest Auth](documentations/Guest/Auth.md), [Guest Booking](documentations/Guest/Booking.md), [Guest Resort](documentations/Guest/Resort.md) and [Manager Auth](documentations/Manager/Auth.md). The reasoning behind the main design choices is in [Decisions](documentations/Decisions.md).
 
 ### 🖼️ Screenshots
 
