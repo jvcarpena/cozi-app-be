@@ -51,7 +51,11 @@ def get_auto_master(user: AutoUser):
 
     # ONLY A MASTER CAN USE A MASTER ENDPOINT, EVEN IF THE TOKEN BELONGS TO A VALID ADMIN OR GUEST.
 
-    if not isinstance(user, Master):
+    if isinstance(user, Admin):
+
+        raise HTTPException(status_code=403, detail=TokenError.MASTER_ONLY.name)
+
+    if isinstance(user, Guest):
 
         raise HTTPException(status_code=401, detail=TokenError.INVALID_SESSION.name)
 

@@ -12,6 +12,8 @@ class TokenError(StrEnum):
 
     INVALID_SESSION = "Expired token or invalid token"
 
+    MASTER_ONLY = "Master only"
+
 
 class TokenDTO(BaseModel):
 
