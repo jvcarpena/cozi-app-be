@@ -12,3 +12,4 @@ class ManagerErrorMessage(StrEnum):
     PASSWORD_MISMATCH = "New password and confirm password do not match."
     RESORT_NAME_ALREADY_EXISTS = "Resort name already exist."
     RESORT_DOES_NOT_EXIST = "Resort does not exist."
+    NOT_YOUR_RESORT = "Not your resort."
