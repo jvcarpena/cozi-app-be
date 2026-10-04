@@ -36,9 +36,7 @@ def update_resort_pricing(context: UpdateResortPricingContext):
     if resort.organization_id != context.user.organization_id:
         raise HTTPException(status_code=403, detail=ManagerErrorMessage.NOT_YOUR_RESORT.name)
 
-    updated_data = context.request_dto.model_dump()
-
-    for field, value in updated_data.items():
+    for field, value in context.request_dto.model_dump().items():
         setattr(Resort, field, value)
 
     context.session.commit()

@@ -6,6 +6,7 @@ from domains.manager.resort.create_resort_service import CreateResortContext, cr
 from domains.manager.resort.get_resort_detail_service import GetResortDetailContext, get_resort_detail
 from domains.manager.resort.get_resort_service import GetResortContext, get_resort
 from domains.manager.resort.update_resort_pricing_service import UpdateResortPricingContext, update_resort_pricing
+from domains.manager.resort.update_resort_status_service import update_resort_status, UpdateResortStatusContext
 
 resort_router = APIRouter(prefix="/resorts")
 
@@ -32,3 +33,9 @@ def do_get_resort_detail(context: Annotated[GetResortDetailContext, Depends()]):
 def do_update_resort_pricing(context: Annotated[UpdateResortPricingContext, Depends()]):
 
     return update_resort_pricing(context)
+
+
+@resort_router.put("/{id}/status")
+def do_update_resort_status(context: Annotated[UpdateResortStatusContext, Depends()]):
+
+    return update_resort_status(context)

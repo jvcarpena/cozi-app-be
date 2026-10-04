@@ -44,7 +44,7 @@ def get_resort(context: GetResortContext):
         select(Resort).where(
             and_(
                 expression_based_on_user,
-                Resort.deleted_at.isnot(None),
+                Resort.deleted_at.is_(None),
             )
         )
     ).all()

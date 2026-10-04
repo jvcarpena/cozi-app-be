@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 from fastapi import Path, HTTPException
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
+from sqlalchemy import select, and_
 
 from core.models.admin import Admin
 from core.models.master import Master
@@ -52,7 +52,14 @@ class GetResortDetailResponseDTO(BaseModel):
 
 def get_resort_detail(context: GetResortDetailContext):
 
-    resort: Resort = context.session.scalars(select(Resort).where(Resort.id == context.resort_id)).one_or_none()
+    resort: Resort = context.session.scalars(
+        select(Resort).where(
+            and_(
+                Resort.id == context.resort_id,
+                Resort.deleted_at.is_(None),
+            )
+        )
+    ).one_or_none()
 
     if not resort:
         raise HTTPException(status_code=404, detail=ManagerErrorMessage.RESORT_DOES_NOT_EXIST.name)
