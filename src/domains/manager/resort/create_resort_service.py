@@ -1,29 +1,52 @@
 from dataclasses import dataclass
-from decimal import Decimal
-from typing import Optional, Annotated, Literal
+from typing import Annotated, Literal, Optional
 
-from fastapi import Body, HTTPException
-from pydantic import BaseModel, StringConstraints, Field
-from sqlalchemy import exists, select
+from fastapi import Body
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from core.models.resort import Resort, ResortStatusEnum
 from core.services.auto_session import AutoSession
 from core.services.auto_user import AutoMasterUser
-from domains.manager.enums import ManagerErrorMessage
+from domains.manager.resort.services.build_resort_detail import GetResortDetailResponseDTO, build_resort_detail
+from domains.manager.resort.services.check_resort_name import check_resort_name_is_free, commit_resort
+from domains.manager.resort.services.resort_field_types import (
+    Latitude,
+    Longitude,
+    ResortAddress,
+    ResortDescription,
+    ResortMaxGuests,
+    ResortName,
+    ResortPrice,
+    ResortRoomCount,
+)
 
 
 class CreateResortRequestDTO(BaseModel):
-    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=256)]
-    description: str
-    base_price_per_night: Decimal = Field(gt=0, max_digits=12)
-    base_price_per_day_use: Decimal = Field(gt=0, max_digits=12)
+
+    # THE ORGANIZATION AND THE STATUS ARE NEVER SENT BY THE CLIENT, A FIELD THAT IS NOT LISTED IS REJECTED.
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: ResortName
+    description: ResortDescription
+    base_price_per_night: ResortPrice
+    base_price_per_day_use: ResortPrice
     currency: Literal["PHP"]
-    max_guests: int = Field(gt=0)
-    num_bedrooms: int = Field(gt=0)
-    num_bathrooms: int = Field(gt=0)
-    latitude: Optional[Decimal] = None
-    longitude: Optional[Decimal] = None
-    address: str
+    max_guests: ResortMaxGuests
+    num_bedrooms: ResortRoomCount
+    num_bathrooms: ResortRoomCount
+    latitude: Optional[Latitude] = None
+    longitude: Optional[Longitude] = None
+    address: ResortAddress
+
+    @model_validator(mode="after")
+    def coordinates_come_together(self) -> "CreateResortRequestDTO":
+
+        if (self.latitude is None) != (self.longitude is None):
+
+            raise ValueError("latitude and longitude must be sent together")
+
+        return self
 
 
 @dataclass
@@ -33,14 +56,16 @@ class CreateResortContext:
     request_dto: Annotated[CreateResortRequestDTO, Body()]
 
 
-def create_resort(context: CreateResortContext):
+def create_resort(context: CreateResortContext) -> GetResortDetailResponseDTO:
 
-    if context.session.scalars(select(exists().where(Resort.name == context.request_dto.name))).one_or_none():
+    # A RESORT NAME IS UNIQUE INSIDE THE ORGANIZATION OF THE MASTER
 
-        raise HTTPException(status_code=400, detail=ManagerErrorMessage.RESORT_NAME_ALREADY_EXISTS.name)
+    check_resort_name_is_free(context.session, context.user.organization_id, context.request_dto.name)
+
+    # THE RESORT ALWAYS STARTS AS A DRAFT (INACTIVE) IN THE ORGANIZATION OF THE MASTER
 
     context.session.add(
-        Resort(
+        resort := Resort(
             organization_id=context.user.organization_id,
             name=context.request_dto.name,
             status=ResortStatusEnum.INACTIVE,
@@ -57,6 +82,6 @@ def create_resort(context: CreateResortContext):
         )
     )
 
-    context.session.commit()
+    commit_resort(context.session)
 
-    return
+    return build_resort_detail(context.session, context.user, resort)

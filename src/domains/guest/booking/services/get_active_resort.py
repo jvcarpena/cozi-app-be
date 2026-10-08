@@ -13,7 +13,7 @@ def get_active_resort(session: Session, resort_id: int) -> Resort:
     if not resort:
         raise HTTPException(status_code=400, detail=GuestErrorMessage.RESORT_DOES_NOT_EXIST.name)
 
-    if resort.status == ResortStatusEnum.INACTIVE:
+    if resort.status != ResortStatusEnum.ACTIVE:
         raise HTTPException(status_code=400, detail=GuestErrorMessage.RESORT_IS_NOT_AVAILABLE.name)
 
     return resort

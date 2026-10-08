@@ -6,7 +6,7 @@ from sqlalchemy import select, exists
 from sqlalchemy.orm import Session
 
 from core.models.guest import Guest
-from core.models.resort import Resort
+from core.models.resort import Resort, ResortStatusEnum
 from core.models.resort_review import ResortReview
 from domains.guest.enums import GuestErrorMessage
 
@@ -27,6 +27,7 @@ def create_resort_review(request_dto: CreateResortReviewRequestDTO, session: Ses
         select(
             exists().where(
                 Resort.id == request_dto.resort_id,
+                Resort.status != ResortStatusEnum.INACTIVE,
             )
         )
     ).one_or_none()

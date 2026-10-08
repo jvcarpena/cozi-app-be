@@ -2,15 +2,21 @@ from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Path, Body, HTTPException
-from pydantic import BaseModel
-from sqlalchemy import select, and_, or_
+from pydantic import BaseModel, ConfigDict
 
-from core.models.admin import Admin
-from core.models.master import Master
-from core.models.resort import ResortStatusEnum, Resort
+from core.models.resort import ResortStatusEnum
 from core.services.auto_session import AutoSession
 from core.services.auto_user import AutoManagerUser
 from domains.manager.enums import ManagerErrorMessage
+from domains.manager.resort.services.build_resort_detail import GetResortDetailResponseDTO, build_resort_detail
+from domains.manager.resort.services.get_managed_resort import get_managed_resort
+from domains.manager.resort.services.has_upcoming_bookings import has_upcoming_bookings
+
+
+class UpdateResortStatusRequestDTO(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: ResortStatusEnum
 
 
 @dataclass
@@ -18,33 +24,28 @@ class UpdateResortStatusContext:
     user: AutoManagerUser
     session: AutoSession
     resort_id: Annotated[int, Path(...)]
-    request_dto: Annotated["UpdateResortStatusRequestDTO", Body()]
+    request_dto: Annotated[UpdateResortStatusRequestDTO, Body()]
 
 
-class UpdateResortStatusRequestDTO(BaseModel):
-    status: ResortStatusEnum
+def update_resort_status(context: UpdateResortStatusContext) -> GetResortDetailResponseDTO:
 
+    resort = get_managed_resort(context.session, context.user, context.resort_id)
 
-def update_resort_status(context: UpdateResortStatusContext):
+    new_status = context.request_dto.status
 
-    resort: Resort = context.session.scalars(
-        select(Resort).where(
-            and_(
-                Resort.id == context.resort_id,
-                Resort.deleted_at.is_(None),
-            )
-        )
-    ).one_or_none()
+    # A LIVE RESORT CANNOT BE CLOSED (INACTIVE OR MAINTENANCE) WHILE GUESTS STILL HAVE BOOKINGS AT IT.
+    # THE BOOKINGS HAVE TO BE CANCELLED OR FINISHED FIRST.
 
-    if not resort:
-        raise HTTPException(status_code=404, detail=ManagerErrorMessage.RESORT_DOES_NOT_EXIST.name)
+    if (
+        resort.status == ResortStatusEnum.ACTIVE
+        and new_status != ResortStatusEnum.ACTIVE
+        and has_upcoming_bookings(context.session, resort.id)
+    ):
 
-    if isinstance(context.user, Master) and resort.organization_id != context.user.organization_id:
-        raise HTTPException(status_code=403, detail=ManagerErrorMessage.NOT_YOUR_RESORT.name)
+        raise HTTPException(status_code=400, detail=ManagerErrorMessage.RESORT_HAS_UPCOMING_BOOKINGS.name)
 
-    for field, value in context.request_dto.model_dump().items():
-        setattr(resort, field, value)
+    resort.status = new_status
 
     context.session.commit()
 
-    return
+    return build_resort_detail(context.session, context.user, resort)

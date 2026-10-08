@@ -17,19 +17,24 @@ sequenceDiagram
 
     C->>A: GET /resorts/{id}
     A->>D: Resort, amenities and reviews
-    alt Resort not found
+    alt Resort not found, or a draft (INACTIVE)
         A-->>C: 404 RESORT_DOES_NOT_EXIST
     else
         A-->>C: Details, amenities grouped by category, rating averages
     end
 
     C->>A: GET /resorts/{id}/reviews
-    A->>D: Reviews of that resort
-    A-->>C: Reviews (reviewer first name only)
+    A->>D: Does the resort exist and is it not a draft?
+    alt Not found, or a draft (INACTIVE)
+        A-->>C: 404 RESORT_DOES_NOT_EXIST
+    else
+        A->>D: Reviews of that resort
+        A-->>C: Reviews (reviewer first name only)
+    end
 
     C->>A: POST /resorts/{id}/reviews {resort_id, 3 ratings, comment} + guest token
-    A->>D: Does the resort exist?
-    alt Not found
+    A->>D: Does the resort exist and is it not a draft?
+    alt Not found, or a draft (INACTIVE)
         A-->>C: 404 RESORT_DOES_NOT_EXIST
     else
         A->>D: Insert review for the current guest
@@ -39,10 +44,11 @@ sequenceDiagram
 
 ## Rules worth knowing
 
-- The list only shows `ACTIVE` resorts. Details and reviews work for any resort id.
+- The list only shows `ACTIVE` resorts. Details and reviews also work for a resort under `MAINTENANCE`.
+- A new resort is a **draft** (`INACTIVE`) until its manager activates it. A draft is invisible to guests: its details, reviews and review posting all answer `404`, the same as a resort that doesn't exist, so drafts can't be found.
 - Ratings are whole numbers (overall, cleanliness, value). The list returns the average overall rating and details returns all three averages. A resort with no reviews has `0.0` for every rating, in both the list and the details.
 - Amenity categories: `POOL`, `ENTERTAINMENT`, `DINING`, `UTILITIES`.
-- Resort statuses: `ACTIVE`, `INACTIVE`, `MAINTENANCE`. Only `INACTIVE` blocks booking (see [Booking](Booking.md)).
+- Resort statuses: `ACTIVE`, `INACTIVE`, `MAINTENANCE`. Only an `ACTIVE` resort can be booked (see [Booking](Booking.md)). Managers set the status, see [Manager · Resort](../Manager/Resort.md).
 
 ## Where things are
 

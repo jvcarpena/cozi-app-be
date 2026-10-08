@@ -20,7 +20,7 @@ sequenceDiagram
     A->>D: Load the resort
     alt Resort not found
         A-->>C: 400 RESORT_DOES_NOT_EXIST
-    else Resort is INACTIVE
+    else Resort is not ACTIVE (a draft, or under maintenance)
         A-->>C: 400 RESORT_IS_NOT_AVAILABLE
     else Guests more than max_guests
         A-->>C: 400 NUMBER_OF_GUESTS_EXCEEDS_RESORT_CAPACITY
@@ -89,6 +89,7 @@ Cancelling frees the dates, so they can be booked again straight away.
 
 ## Rules worth knowing
 
+- Only an `ACTIVE` resort can be booked. A draft (`INACTIVE`) or a resort under `MAINTENANCE` answers `RESORT_IS_NOT_AVAILABLE`. A manager can't close a live resort while it has upcoming bookings (see [Manager · Resort](../Manager/Resort.md#status-and-bookings)).
 - Send timezone-aware datetimes. They are stored in UTC and most responses show Asia/Manila time.
 - New bookings are `PENDING`, and cancelling sets `CANCELLED`. `CONFIRMED`, `COMPLETED` and `EXPIRED` exist but nothing in the guest API sets them yet.
 - A cancelled booking is listed under `status=CANCELLED`, not under `PENDING`.

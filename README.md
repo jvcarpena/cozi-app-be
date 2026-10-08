@@ -29,6 +29,7 @@
 | 🧑‍💼 **Manager authentication** | Sign up (creates a master with an organization), email verification, login (returns the role), logout and forgot/reset password for masters and admins, with tokens kept separate from guest tokens |
 | 🛡️ **Secure payloads** | Credentials are sent as encrypted payloads (`EncryptedDataDTO`) and decrypted server-side; passwords hashed with `bcrypt` |
 | 🏨 **Resorts** | List resorts, view details (amenities, capacity), read and post reviews |
+| 🏗️ **Manager resorts** | Masters create resorts as drafts; masters and admins edit details and status; only masters change prices. A manager only reaches their own resorts, and a live resort can't be closed while it has upcoming bookings |
 | 📅 **Bookings** | Price/availability **preview**, create, history, details, and cancel |
 | ✅ **Business rules** | Booked dates are blocked (and freed on cancel), guest-capacity validation, price computation, check-out-after-check-in checks |
 | 📨 **Async email** | Verification and password reset emails are dispatched through Celery workers over RabbitMQ |
@@ -81,7 +82,8 @@ cozi-app-be/
 │   │   │   ├── booking/         #   Booking router, services, and rule helpers
 │   │   │   └── resort/          #   Resort router and services
 │   │   └── manager/             # Manager (admin) API
-│   │       └── auth/            #   Sign up, verification, login, logout, forgot/reset password
+│   │       ├── auth/            #   Sign up, verification, login, logout, forgot/reset password
+│   │       └── resort/          #   Create, list, view and edit resorts, prices and status
 │   └── templates/               # Jinja2 / email HTML templates
 ├── tests/                       # Mirrors src/domains structure
 ├── alembic.ini
@@ -245,6 +247,12 @@ Guest routes are prefixed with `/<STAGE>/api/v1/guest` and manager routes with `
 | `POST` | `/manager/auth/forgot-password` | Email a password reset link (same response whether or not the email exists) |
 | `GET` | `/manager/auth/reset-password?d=<token>` | Password reset page |
 | `POST` | `/manager/auth/reset-password` | Set the new password (form post from that page) |
+| `POST` | `/manager/resorts` | Create a resort as a draft (master only) |
+| `GET` | `/manager/resorts` | List the resorts of the manager (a master sees all, an admin sees theirs) |
+| `GET` | `/manager/resorts/{resort_id}` | One resort |
+| `PATCH` | `/manager/resorts/{resort_id}` | Edit the details of a resort |
+| `PUT` | `/manager/resorts/{resort_id}/pricing` | Change the prices (master only) |
+| `PUT` | `/manager/resorts/{resort_id}/status` | Activate or close a resort (blocked while it has upcoming bookings) |
 
 A guest token only works on guest endpoints and a manager token only on manager endpoints.
 
@@ -278,7 +286,7 @@ curl http://cozi-api.localhost/develop/api/v1/guest/bookings \
 ## 🗺️ 6. Roadmap
 
 - [ ] 💳 Payment gateway integration (the `Payment` model is in place)
-- [ ] 🏨 Masters create and manage resorts (details, prices, amenities, photos, calendar)
+- [ ] 🏨 Resort amenities, photos and the availability calendar for managers
 - [ ] 🧑‍💼 Masters invite, replace and remove the admin of each resort; admins manage their own resort
 - [ ] 📋 Manager view of the bookings of a resort
 - [ ] 🔍 Resort search, filtering, and pagination

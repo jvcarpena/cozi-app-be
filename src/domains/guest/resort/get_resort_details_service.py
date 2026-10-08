@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 from fastapi import Path, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.orm import Session, selectinload
 
 from core.models.resort import ResortStatusEnum, Resort
@@ -56,7 +56,10 @@ def get_resort_details(resort_id: Annotated[int, Path(...)], session: Session) -
             selectinload(Resort.reviews),
         )
         .where(
-            Resort.id == resort_id,
+            and_(
+                Resort.id == resort_id,
+                Resort.status != ResortStatusEnum.INACTIVE,
+            )
         )
     ).one_or_none()
 

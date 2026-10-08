@@ -18,6 +18,11 @@ The important design choices in COZI: what the options were, what was chosen, wh
 10. [A booking blocks its dates when it is created](#10-a-booking-blocks-its-dates-when-it-is-created)
 11. [Emails are sent by a Celery worker](#11-emails-are-sent-by-a-celery-worker)
 12. [Integration tests run on real PostgreSQL and RabbitMQ](#12-integration-tests-run-on-real-postgresql-and-rabbitmq)
+13. [One ownership check, and a 404 for any resort that is not yours](#13-one-ownership-check-and-a-404-for-any-resort-that-is-not-yours)
+14. [New resorts are drafts, and only an active resort is bookable](#14-new-resorts-are-drafts-and-only-an-active-resort-is-bookable)
+15. [Prices have their own master-only endpoint](#15-prices-have-their-own-master-only-endpoint)
+16. [A live resort can't be closed while it has upcoming bookings](#16-a-live-resort-cant-be-closed-while-it-has-upcoming-bookings)
+17. [Resort names are unique inside an organization](#17-resort-names-are-unique-inside-an-organization)
 
 ---
 
@@ -218,3 +223,75 @@ The important design choices in COZI: what the options were, what was chosen, wh
 **Trade-offs**
 - Docker must be running, and the suite is slower.
 - There is no CI pipeline yet, so the suite is only as reliable as the last time someone ran it.
+
+## 13. One ownership check, and a 404 for any resort that is not yours
+
+**Problem.** A master has several resorts and an admin has one. Every resort endpoint must make sure the caller may touch that resort, and the check was copy-pasted in each service. Two of them had forgotten it (any manager could read any resort, any admin could change any resort's status).
+
+**Options**
+- Check ownership in every service, answering `403 NOT_YOUR_RESORT` for another manager's resort.
+- One shared check (`get_managed_resort`) that every endpoint calls, answering `404` for anything that is not yours (chosen).
+
+**Why.** A single function cannot be forgotten in one endpoint, and a new endpoint only has to call it. The same `404` for "doesn't exist", "removed" and "not yours" means a manager can't learn which resort ids exist, and the response never contains data about someone else's resort.
+
+**Trade-offs**
+- A manager who mistypes an id gets "does not exist" instead of "not yours". It's less helpful, and also less revealing.
+- Role limits (like prices) are still separate: a master-only endpoint refuses an admin with `403 MASTER_ONLY` before any resort is looked up, because the token is valid and only the role is wrong.
+
+## 14. New resorts are drafts, and only an active resort is bookable
+
+**Problem.** A master creates a resort in one request, but it isn't ready for guests until its details, prices and (later) photos are right.
+
+**Chosen.** A new resort starts as `INACTIVE` (a draft). The manager activates it. Guests only see and book what is ready:
+- the guest list shows `ACTIVE` resorts
+- details and reviews work for `ACTIVE` and `MAINTENANCE`, and answer `404` for a draft, the same as a missing resort
+- only an `ACTIVE` resort can be booked
+
+**Why.** Before this, a resort created by a manager would have been visible to guests by id at once, and a resort under maintenance could still be booked. Making the draft look like a missing resort also stops guests from discovering unfinished resorts.
+
+**Trade-offs**
+- A resort that needs no review step (a single owner with everything ready) still has one extra call to go live.
+- `MAINTENANCE` keeps its page visible but is closed to new bookings.
+
+## 15. Prices have their own master-only endpoint
+
+**Problem.** Only the master may change prices. An admin may change everything else about a resort.
+
+**Options**
+- One edit endpoint that checks the role field by field.
+- A separate pricing endpoint that only masters can call, and an edit endpoint that rejects price fields (chosen).
+
+**Why.** The permission is clear from the URL and the dependency, not from reading the body. The edit endpoint rejects unknown fields with a `422`, so an admin who sends a price is told it wasn't accepted instead of getting a `200` that did nothing.
+
+**Trade-offs**
+- Two calls when a master wants to change both details and prices.
+- Existing bookings keep the price they were made with, because each booking stores its own total.
+
+## 16. A live resort can't be closed while it has upcoming bookings
+
+**Problem.** Closing a resort (`INACTIVE` or `MAINTENANCE`) stops new bookings, but guests who already booked would be left with a resort that is closed.
+
+**Options**
+- Allow it and leave the bookings.
+- Allow it and cancel the bookings automatically.
+- **Block it until the bookings are handled** (chosen).
+
+**Why.** Cancelling for the manager would refund money and message guests, and that flow doesn't exist yet. Blocking is the safe choice that forces the manager to handle each booking.
+
+**Rule.** Moving from `ACTIVE` to `INACTIVE` or `MAINTENANCE` is refused while a `PENDING` or `CONFIRMED` booking has not ended yet. Moving between closed statuses, and reopening, are never blocked.
+
+**Trade-offs**
+- A `PENDING` booking that is never paid blocks the closing until it's cancelled. A job that expires unpaid bookings is still to be built.
+- A guest booking at the very same moment as the status change can slip through.
+
+## 17. Resort names are unique inside an organization
+
+**Problem.** A master with several resorts shouldn't end up with two of the same name, but different masters can legitimately use the same name.
+
+**Chosen.** A unique constraint on `(organization_id, name)`, plus a check before saving that gives a clear `400 RESORT_NAME_ALREADY_EXISTS`. If two requests pass the check together, the constraint stops the second and the same error is returned.
+
+**Why.** The first version of the check searched every organization, which blocked valid names and revealed other masters' resort names. The database constraint is the real guarantee, the check is only for the friendly error.
+
+**Trade-offs**
+- Names are compared exactly after trimming, so `Sunrise` and `sunrise` are different.
+- A removed resort still holds its name, because the constraint doesn't ignore `deleted_at`. Removing resorts isn't built yet.

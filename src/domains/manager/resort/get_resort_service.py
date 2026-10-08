@@ -3,8 +3,7 @@ from decimal import Decimal
 from typing import List, Sequence
 
 from pydantic import BaseModel
-from select import select
-from sqlalchemy import and_
+from sqlalchemy import and_, select
 
 from core.models.admin import Admin
 from core.models.resort import ResortStatusEnum, Resort
@@ -32,7 +31,11 @@ class GetResortResponseDTO(BaseModel):
     resorts: List[ResortDTO]
 
 
-def get_resort(context: GetResortContext):
+def get_resort(context: GetResortContext) -> GetResortResponseDTO:
+    """
+    Lists the resorts of the manager: every resort of the organization for a master, the one resort they are
+    assigned to for an admin.
+    """
 
     expression_based_on_user = (
         (Resort.id == context.user.resort_id)
@@ -41,12 +44,14 @@ def get_resort(context: GetResortContext):
     )
 
     resorts: Sequence[Resort] = context.session.scalars(
-        select(Resort).where(
+        select(Resort)
+        .where(
             and_(
                 expression_based_on_user,
                 Resort.deleted_at.is_(None),
             )
         )
+        .order_by(Resort.created_at.desc(), Resort.id.desc())
     ).all()
 
     resorts_dto: List[ResortDTO] = [

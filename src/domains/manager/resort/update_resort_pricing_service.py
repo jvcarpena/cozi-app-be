@@ -1,15 +1,22 @@
 from dataclasses import dataclass
-from decimal import Decimal
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
-from fastapi import Path, HTTPException, Body
-from pydantic import BaseModel, Field
-from sqlalchemy import select
+from fastapi import Path, Body
+from pydantic import BaseModel, ConfigDict
 
-from core.models.resort import Resort
 from core.services.auto_session import AutoSession
 from core.services.auto_user import AutoMasterUser
-from domains.manager.enums import ManagerErrorMessage
+from domains.manager.resort.services.build_resort_detail import GetResortDetailResponseDTO, build_resort_detail
+from domains.manager.resort.services.get_managed_resort import get_managed_resort
+from domains.manager.resort.services.resort_field_types import ResortPrice
+
+
+class UpdateResortPricingRequestDTO(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    base_price_per_night: ResortPrice
+    base_price_per_day_use: ResortPrice
+    currency: Literal["PHP"]
 
 
 @dataclass
@@ -17,28 +24,22 @@ class UpdateResortPricingContext:
     user: AutoMasterUser
     session: AutoSession
     resort_id: Annotated[int, Path(...)]
-    request_dto: Annotated["UpdateResortPricingRequestDTO", Body()]
+    request_dto: Annotated[UpdateResortPricingRequestDTO, Body()]
 
 
-class UpdateResortPricingRequestDTO(BaseModel):
-    base_price_per_night: Decimal = Field(gt=0, max_digits=12)
-    base_price_per_day_use: Decimal = Field(gt=0, max_digits=12)
-    currency: Literal["PHP"]
+def update_resort_pricing(context: UpdateResortPricingContext) -> GetResortDetailResponseDTO:
+    """
+    Only a master can change prices. Bookings that were already made keep the price they were made with.
+    """
 
+    resort = get_managed_resort(context.session, context.user, context.resort_id)
 
-def update_resort_pricing(context: UpdateResortPricingContext):
+    resort.base_price_per_night = context.request_dto.base_price_per_night
 
-    resort = context.session.scalars(select(Resort).where(Resort.id == context.resort_id)).one_or_none()
+    resort.base_price_per_day_use = context.request_dto.base_price_per_day_use
 
-    if not resort:
-        raise HTTPException(status_code=404, detail=ManagerErrorMessage.RESORT_DOES_NOT_EXIST.name)
-
-    if resort.organization_id != context.user.organization_id:
-        raise HTTPException(status_code=403, detail=ManagerErrorMessage.NOT_YOUR_RESORT.name)
-
-    for field, value in context.request_dto.model_dump().items():
-        setattr(Resort, field, value)
+    resort.currency = context.request_dto.currency
 
     context.session.commit()
 
-    return
+    return build_resort_detail(context.session, context.user, resort)

@@ -2,7 +2,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Optional, List
 
-from sqlalchemy import ForeignKey, String, Text, Numeric
+from sqlalchemy import ForeignKey, String, Text, Numeric, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.models import resort_amenity, resort_review
@@ -21,6 +21,8 @@ class ResortStatusEnum(StrEnum):
 class Resort(Base, AuditMixin):
 
     __tablename__ = "resorts"
+
+    __table_args__ = (UniqueConstraint("organization_id", "name", name="uq_resorts_organization_id_name"),)
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
 
