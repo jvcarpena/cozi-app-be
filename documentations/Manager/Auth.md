@@ -9,7 +9,7 @@ The flow is a copy of the guest one. See [Guest · Auth](../Guest/Auth.md) for e
 | Role | Who | How the account is created | Resorts |
 | --- | --- | --- | --- |
 | **Master** | The owner. Whoever signs up as a manager, with one resort or many | Signs up | Owns an **organization** that holds all their resorts |
-| **Admin** | The person in charge of one resort day to day | **Invited by a master** (not built yet) | Manages exactly **one** resort |
+| **Admin** | The person in charge of one resort day to day | **Invited by a master** (see [Manager · Resort](Resort.md#the-admin-of-a-resort)) | Manages exactly **one** resort |
 
 - A master can do everything an admin can. A master also creates resorts, sets their prices and invites the admins. An admin only sees the resort they manage.
 - A resort belongs to one master (through the organization) and has zero or one admin. A master can run a resort alone until they invite an admin.
@@ -121,6 +121,7 @@ sequenceDiagram
 - **Guest and manager reset tokens are not interchangeable.** The token only holds a request id, so each type is signed with its own key (`password_reset` for guests, `manager_password_reset` for managers).
 - **Using the link also verifies the email.** The link was sent to the address, so using it proves the address is theirs. This is how an invited admin will get started: the invite link sets their password and verifies them in one step.
 - A **removed** manager can't use a link that was sent before they were removed.
+- **Reset or invite.** Every link request has a `purpose`: `RESET` (forgot password, lives 1 hour) or `INVITE` (a master invited an admin, lives 7 days). Both open this same page and use the same token. The page says "Set your password" for an invite and "Reset your password" otherwise, and the success page changes the same way. Forgot password only looks at `RESET` requests.
 
 ## 4. Who can call what
 
@@ -165,6 +166,5 @@ The dependencies are in `src/core/services/auto_user.py`: `AutoMasterUser`, `Aut
 
 ## Not built yet
 
-- **Resort management** for masters and admins (create and edit resorts, amenities, photos, calendar).
-- **Inviting, resending to and removing an admin.** The plan: the master enters the admin's details and the admin gets a link to set a password. Removing an admin sets `deleted_at`, renames them `DELETED ADMIN`, and clears their email, phone, password and resort, so the resort can get a new admin.
-- **Only the master edits prices.** Everything else is open to both roles.
+- Amenities, photos and the availability calendar of a resort (see [Manager · Resort](Resort.md)).
+- Moving an admin to another resort. Today it is remove, then invite again.

@@ -23,6 +23,8 @@ The important design choices in COZI: what the options were, what was chosen, wh
 15. [Prices have their own master-only endpoint](#15-prices-have-their-own-master-only-endpoint)
 16. [A live resort can't be closed while it has upcoming bookings](#16-a-live-resort-cant-be-closed-while-it-has-upcoming-bookings)
 17. [Resort names are unique inside an organization](#17-resort-names-are-unique-inside-an-organization)
+18. [An admin is invited through the set-password link, with an explicit purpose](#18-an-admin-is-invited-through-the-set-password-link-with-an-explicit-purpose)
+19. [Removing an admin keeps the row and frees the identifiers](#19-removing-an-admin-keeps-the-row-and-frees-the-identifiers)
 
 ---
 
@@ -295,3 +297,41 @@ The important design choices in COZI: what the options were, what was chosen, wh
 **Trade-offs**
 - Names are compared exactly after trimming, so `Sunrise` and `sunrise` are different.
 - A removed resort still holds its name, because the constraint doesn't ignore `deleted_at`. Removing resorts isn't built yet.
+
+## 18. An admin is invited through the set-password link, with an explicit purpose
+
+**Problem.** A master has to give an admin access to one resort. The admin must end up with a password only they know, and a verified email.
+
+**Options**
+1. The master chooses a password for the admin.
+2. A separate invite mechanism with its own table and page.
+3. **Reuse the password reset flow** (chosen): create the admin with no password and email a link to the page where a password is set.
+
+**Why option 3.** The master never sees the password. Opening the emailed link proves the email is theirs, so setting the password also verifies the account. The table, token, page and rules already exist and are tested.
+
+**Why a `purpose` column.** An invite and a password reset are different: an invite lasts 7 days (a reset 1 hour), uses a different email, and the page should say "set" a password, not "reset" it. The first idea was to guess the difference from the account being unverified. A `purpose` (`RESET` or `INVITE`) on the request is explicit and doesn't depend on that coincidence. It needs a migration with a default of `RESET` for the rows that already exist.
+
+**Trade-offs**
+- A pending admin who uses forgot password gets the generic answer and no email (they have no password to forget). They have to ask the master to resend.
+- Resending is limited to once every 5 minutes so a master can't flood an inbox, and it closes the older link.
+- The email is queued after the commit and the Celery task logs errors without retrying, so a lost email is recovered with resend.
+
+## 19. Removing an admin keeps the row and frees the identifiers
+
+**Problem.** When a master removes an admin, that person must lose access at once, and the resort and the email must be usable again.
+
+**Options**
+- Hard delete the row.
+- **Keep the row, mark it deleted, and clear the person's data** (chosen).
+
+**Chosen.** Set `deleted_at`, rename them `DELETED ADMIN`, and clear the email, phone, password, picture, stored token and `resort_id`. All open links are marked used. Inviting the same person again creates a new account.
+
+**Why**
+- The row stays as a record for anything that refers to the user later, such as audit history.
+- Clearing the email frees it for a new invite or a sign up. Clearing `resort_id` frees the unique link, so the resort can get a new admin.
+- Nothing reads `deleted_at` on its own, so the token check refuses a removed user explicitly. That makes the removal take effect immediately, even for a token that has not expired.
+- Open links are closed so an old invite or password reset can't bring the account back.
+
+**Trade-offs**
+- Anything that will show a removed admin later (for example a history of who did what) must expect a missing email and the name `DELETED ADMIN`.
+- Nothing links the old and new account of the same person.

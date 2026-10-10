@@ -29,7 +29,7 @@
 | 🧑‍💼 **Manager authentication** | Sign up (creates a master with an organization), email verification, login (returns the role), logout and forgot/reset password for masters and admins, with tokens kept separate from guest tokens |
 | 🛡️ **Secure payloads** | Credentials are sent as encrypted payloads (`EncryptedDataDTO`) and decrypted server-side; passwords hashed with `bcrypt` |
 | 🏨 **Resorts** | List resorts, view details (amenities, capacity), read and post reviews |
-| 🏗️ **Manager resorts** | Masters create resorts as drafts; masters and admins edit details and status; only masters change prices. A manager only reaches their own resorts, and a live resort can't be closed while it has upcoming bookings |
+| 🏗️ **Manager resorts** | Masters create resorts as drafts and invite an admin to run each one; masters and admins edit details and status; only masters change prices. A manager only reaches their own resorts, and a live resort can't be closed while it has upcoming bookings |
 | 📅 **Bookings** | Price/availability **preview**, create, history, details, and cancel |
 | ✅ **Business rules** | Booked dates are blocked (and freed on cancel), guest-capacity validation, price computation, check-out-after-check-in checks |
 | 📨 **Async email** | Verification and password reset emails are dispatched through Celery workers over RabbitMQ |
@@ -253,6 +253,9 @@ Guest routes are prefixed with `/<STAGE>/api/v1/guest` and manager routes with `
 | `PATCH` | `/manager/resorts/{resort_id}` | Edit the details of a resort |
 | `PUT` | `/manager/resorts/{resort_id}/pricing` | Change the prices (master only) |
 | `PUT` | `/manager/resorts/{resort_id}/status` | Activate or close a resort (blocked while it has upcoming bookings) |
+| `POST` | `/manager/resorts/{resort_id}/admin` | Invite an admin to a resort by email (master only) |
+| `POST` | `/manager/resorts/{resort_id}/admin/resend` | Send the invite again (master only) |
+| `DELETE` | `/manager/resorts/{resort_id}/admin` | Remove the admin of a resort (master only) |
 
 A guest token only works on guest endpoints and a manager token only on manager endpoints.
 
@@ -287,7 +290,6 @@ curl http://cozi-api.localhost/develop/api/v1/guest/bookings \
 
 - [ ] 💳 Payment gateway integration (the `Payment` model is in place)
 - [ ] 🏨 Resort amenities, photos and the availability calendar for managers
-- [ ] 🧑‍💼 Masters invite, replace and remove the admin of each resort; admins manage their own resort
 - [ ] 📋 Manager view of the bookings of a resort
 - [ ] 🔍 Resort search, filtering, and pagination
 - [ ] 🔑 Token refresh and revoking tokens after a password reset

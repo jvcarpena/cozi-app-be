@@ -12,6 +12,7 @@ How masters and admins create and manage resorts. Routes are under `/<STAGE>/api
 | Edit details (name, description, capacity, address, coordinates) | Yes | Yes, their own resort |
 | **Change prices** | **Yes** | **No (`403 MASTER_ONLY`)** |
 | Change status (`ACTIVE`, `INACTIVE`, `MAINTENANCE`) | Yes | Yes, their own resort |
+| **Invite, resend and remove the admin** | **Yes** | **No (`403 MASTER_ONLY`)** |
 
 Every response is the resort in the same shape (`{"resort": {...}}`), so a client always gets the new state back.
 
@@ -97,6 +98,62 @@ What the status means for guests:
 | `MAINTENANCE` | No | Yes | No |
 | `INACTIVE` (draft) | No | No (404, same as a missing resort) | No |
 
+## The admin of a resort
+
+A resort has zero or one admin. Only the master invites, resends and removes. The admin is never created by signing up.
+
+| Endpoint | What it does |
+| --- | --- |
+| `POST /resorts/{id}/admin` | Invite: email, first name, last name and an optional phone |
+| `POST /resorts/{id}/admin/resend` | Send a new link to an admin who has not set a password yet |
+| `DELETE /resorts/{id}/admin` | Remove the admin |
+
+Every response is the resort. A master sees the admin in it with a `status`: `PENDING` (invited, no password yet) or `ACTIVE`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant M as Master
+    participant A as API
+    participant D as Database
+    participant W as Celery worker
+    participant E as Admin (browser)
+
+    M->>A: POST /resorts/{id}/admin {email, names, phone}
+    A->>D: Resort is the master's? Resort has no admin? Email not used by a master or admin?
+    alt Resort already has an admin
+        A-->>M: 400 RESORT_ALREADY_HAS_ADMIN
+    else Email is already a master or admin
+        A-->>M: 400 EMAIL_REGISTERED
+    else
+        A->>D: Save admin (no password, not verified) and an INVITE link valid 7 days
+        A->>W: Queue the invite email
+        A-->>M: 200 resort, admin PENDING
+        W-->>E: Email with the invite link
+    end
+
+    E->>A: Open the link GET /manager/auth/reset-password?d=token
+    A-->>E: "Set your password" page
+    E->>A: Submit the new password
+    A->>D: Save the password, mark the link used and the admin verified
+    A-->>E: "Your account is ready" page
+    Note over E,A: The admin can now log in as role admin with their resort_id, and the master sees ACTIVE
+```
+
+**Resend.** Only for a `PENDING` admin (`ADMIN_ALREADY_ACTIVE` otherwise, `ADMIN_DOES_NOT_EXIST` if the resort has none). The old link stops working and a new one is sent. It can't be repeated within 5 minutes (`INVITE_RECENTLY_SENT`).
+
+**Remove.** The row stays as a record, but the person is gone and the resort and the email are free:
+
+| Field | After removal |
+| --- | --- |
+| `deleted_at` | Set, so the admin's token is refused straight away |
+| `first_name`, `last_name` | `DELETED`, `ADMIN` |
+| `email_address`, `phone_number`, `hashed_password`, `profile_picture`, `active_token` | Cleared |
+| `resort_id` | Cleared, so the resort can get a new admin |
+| Open invite and password reset links | Marked used, so they can't bring the account back |
+
+The same person can be invited again (a new account with a new id), or sign up as a master. Moving an admin to another resort is remove, then invite.
+
 ## Where things are
 
 | What | Where |
@@ -107,13 +164,15 @@ What the status means for guests:
 | Field rules shared by create and edit | `services/resort_field_types.py` |
 | Name rules and the unique constraint | `services/check_resort_name.py` and `UniqueConstraint` on `Resort` |
 | Upcoming bookings check | `services/has_upcoming_bookings.py` |
+| Invite, resend and remove the admin | `admin/` (`invite_admin_service.py`, `resend_admin_invite_service.py`, `remove_admin_service.py`) |
+| Invite links and the email | `admin/services/admin_invite.py` and `src/templates/emails/admin_invite_email.html` |
 | Master only / manager only dependencies | `src/core/services/auto_user.py` |
 | Tests (need Docker) | `tests/domains/manager/resort/` |
 
 ## Not built yet
 
 - Amenities, photos and the availability calendar of a resort.
-- Inviting an admin to a resort (see [Manager · Auth](Auth.md#not-built-yet)).
+- Moving an admin to another resort (remove, then invite again).
 - A resort can be closed (`INACTIVE`) but not deleted.
 
 ## Known limitations
