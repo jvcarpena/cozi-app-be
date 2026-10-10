@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from core.models.manager_password_reset_request import ManagerPasswordResetRequest
+from core.models.manager_password_reset_request import ManagerLinkPurpose, ManagerPasswordResetRequest
 from core.services.password_reset_token_handler import MANAGER_PURPOSE, PasswordResetTokenHandler
 from core.services.secure_payload_handler import SecurePayloadHandler
 from core.services.send_email import SendEmailRequestDTO
@@ -49,7 +49,10 @@ def initiate_password_reset(encrypted_data: EncryptedDataDTO, session: Session):
 
     most_recent_request = session.scalars(
         select(ManagerPasswordResetRequest)
-        .where(ManagerPasswordResetRequest.manager_id == manager.id)
+        .where(
+            ManagerPasswordResetRequest.manager_id == manager.id,
+            ManagerPasswordResetRequest.purpose == ManagerLinkPurpose.RESET,
+        )
         .order_by(ManagerPasswordResetRequest.id.desc())
         .limit(1)
     ).one_or_none()
@@ -69,6 +72,7 @@ def initiate_password_reset(encrypted_data: EncryptedDataDTO, session: Session):
     session.add(
         new_request := ManagerPasswordResetRequest(
             manager_id=manager.id,
+            purpose=ManagerLinkPurpose.RESET,
             expires_at=current_datetime_utc + PASSWORD_RESET_EXPIRY,
         )
     )

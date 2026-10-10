@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from core.models.manager_password_reset_request import ManagerLinkPurpose
 from core.services.auto_session import AutoSession
 from core.services.auto_user import AutoManagerUser
 from domains.guest.dtos.sign_up_login_dto import EncryptedDataDTO
@@ -33,6 +34,20 @@ PASSWORD_FORM_ERRORS = {
 }
 
 auth_router = APIRouter(prefix="/auth")
+
+
+def is_invite_link(token: str, session) -> bool:
+    """
+    True if the link is a still usable admin invite, so the page can say "set" a password instead of "reset" it.
+    """
+
+    try:
+
+        return get_active_password_reset_request(token, session).purpose == ManagerLinkPurpose.INVITE
+
+    except HTTPException:
+
+        return False
 
 
 @auth_router.post("/signup")
@@ -94,7 +109,7 @@ def do_get_reset_password_page(request: Request, d: str, session: AutoSession):
 
     try:
 
-        get_active_password_reset_request(d, session)
+        reset_request = get_active_password_reset_request(d, session)
 
     except HTTPException:
 
@@ -112,6 +127,7 @@ def do_get_reset_password_page(request: Request, d: str, session: AutoSession):
         {
             "request": request,
             "is_link_valid": True,
+            "is_invite": reset_request.purpose == ManagerLinkPurpose.INVITE,
             "token": d,
             "reset_url": RESET_PASSWORD_URL,
         },
@@ -129,7 +145,7 @@ def do_reset_password(
 
     try:
 
-        reset_password(token, new_password, confirm_password, session)
+        was_invite = reset_password(token, new_password, confirm_password, session)
 
     except HTTPException as exception:
 
@@ -142,6 +158,7 @@ def do_reset_password(
                 {
                     "request": request,
                     "is_link_valid": True,
+                    "is_invite": is_invite_link(token, session),
                     "token": token,
                     "reset_url": RESET_PASSWORD_URL,
                     "error_message": PASSWORD_FORM_ERRORS[exception.detail],
@@ -162,5 +179,6 @@ def do_reset_password(
         "password_reset_success.html",
         {
             "request": request,
+            "is_invite": was_invite,
         },
     )

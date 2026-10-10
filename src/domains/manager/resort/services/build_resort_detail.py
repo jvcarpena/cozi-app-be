@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 from sqlalchemy import select, and_
@@ -12,6 +12,9 @@ from core.models.resort import Resort, ResortStatusEnum
 
 class AdminDTO(BaseModel):
     id: str
+
+    # PENDING: INVITED, HAS NOT SET A PASSWORD YET. ACTIVE: CAN LOG IN.
+    status: Literal["PENDING", "ACTIVE"]
     email: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -60,8 +63,11 @@ def build_resort_detail(session: Session, user: Master | Admin, resort: Resort) 
 
         if admin:
 
+            is_active = admin.verification is not None and admin.verification.verified_at is not None
+
             admin_dto = AdminDTO(
                 id=admin.id,
+                status="ACTIVE" if is_active else "PENDING",
                 email=admin.email_address,
                 first_name=admin.first_name,
                 last_name=admin.last_name,

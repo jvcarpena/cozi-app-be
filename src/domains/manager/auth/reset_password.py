@@ -4,6 +4,7 @@ import bcrypt
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from core.models.manager_password_reset_request import ManagerLinkPurpose
 from core.models.user import User
 from core.services.password_reset_token_handler import PasswordResetTokenError
 from domains.guest.dtos.sign_up_login_dto import validate_password_length
@@ -11,7 +12,10 @@ from domains.manager.auth.get_active_password_reset_request import get_active_pa
 from domains.manager.enums import ManagerErrorMessage
 
 
-def reset_password(token: str, new_password: str, confirm_password: str, session: Session):
+def reset_password(token: str, new_password: str, confirm_password: str, session: Session) -> bool:
+    """
+    :return: True if the link was an invite (the admin just set their first password), False for a password reset.
+    """
 
     # CHECK IF THE NEW PASSWORD AND THE CONFIRMATION MATCH
 
@@ -49,6 +53,8 @@ def reset_password(token: str, new_password: str, confirm_password: str, session
 
         manager.verification.verified_at = datetime.now(tz=timezone.utc)
 
+    was_invite = reset_request.purpose == ManagerLinkPurpose.INVITE
+
     session.commit()
 
-    return
+    return was_invite

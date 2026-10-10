@@ -13,3 +13,7 @@ class ManagerErrorMessage(StrEnum):
     RESORT_NAME_ALREADY_EXISTS = "Resort name already exist."
     RESORT_DOES_NOT_EXIST = "Resort does not exist."
     RESORT_HAS_UPCOMING_BOOKINGS = "Resort has upcoming bookings."
+    RESORT_ALREADY_HAS_ADMIN = "Resort already has an admin."
+    ADMIN_DOES_NOT_EXIST = "Resort has no admin."
+    ADMIN_ALREADY_ACTIVE = "Admin already set a password."
+    INVITE_RECENTLY_SENT = "An invite was sent recently, try again in a few minutes."

@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
+from domains.manager.resort.admin.router import admin_router
 from domains.manager.resort.create_resort_service import CreateResortContext, create_resort
 from domains.manager.resort.get_resort_detail_service import GetResortDetailContext, get_resort_detail
 from domains.manager.resort.get_resort_service import GetResortContext, GetResortResponseDTO, get_resort
@@ -11,6 +12,8 @@ from domains.manager.resort.update_resort_pricing_service import UpdateResortPri
 from domains.manager.resort.update_resort_status_service import update_resort_status, UpdateResortStatusContext
 
 resort_router = APIRouter(prefix="/resorts")
+
+resort_router.include_router(admin_router)
 
 
 @resort_router.post("")
