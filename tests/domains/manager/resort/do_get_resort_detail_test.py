@@ -41,6 +41,7 @@ def test_get_resort_detail_master_sees_the_admin(client, master, master_resort, 
 
     assert response.json()["resort"]["admin"] == {
         "id": resort_admin.id,
+        "status": "ACTIVE",
         "email": resort_admin.email_address,
         "first_name": resort_admin.first_name,
         "last_name": resort_admin.last_name,
